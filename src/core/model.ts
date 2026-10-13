@@ -66,14 +66,27 @@ export function buildModel(p: ModelParams): TrayModel {
   const r1 = Math.max(0, R - margin);
   const d1 = 2 * r1; // للعرض فقط
   const activeLayersCount = clampInt(p.layers, 1, 7);
-  const radialStepMm = p.spacing; // التباعد شعاعي (حركة الرأس على السيرفو)
+
+  const rLastRUnclamped =
+    p.rLast !== undefined
+      ? p.rLast / 2
+      : r1 - (p.spacing || 0) * (activeLayersCount - 1);
+  const rLastR = Math.max(0, rLastRUnclamped);
+  const radialStepMm =
+    activeLayersCount > 1 ? (r1 - rLastR) / (activeLayersCount - 1) : 0;
+  const rLast = rLastR;
+  const dLast = 2 * rLastRUnclamped;
+
   const layers: Layer[] = [];
   const all: Point[] = [];
   const warns: Warn[] = [];
 
   for (let i = 0; i < activeLayersCount; i++) {
-    // Each layer radius decreases by p.spacing (e.g. 200mm - 50mm = 150mm)
-    const r = Math.max(0, r1 - p.spacing * i);
+    // For the last layer, use rLastR strictly to avoid floating point drift
+    const r =
+      i === activeLayersCount - 1
+        ? rLastR
+        : Math.max(0, r1 - radialStepMm * i);
     const d = 2 * r;
     let rawN: number;
     let off: number;
@@ -194,8 +207,8 @@ export function buildModel(p: ModelParams): TrayModel {
   }
 
   // Geometry and physical limit validations based on diameter and margin
-  const dLast = d1 - 2 * p.spacing * (activeLayersCount - 1);
-  const rLast = dLast / 2;
+  // rLast and dLast already defined above from rLastR
+  const dLastVal = 2 * rLastR;
 
   if (d1 <= 0) {
     warns.push({

@@ -522,4 +522,13 @@ describe('buildModel — mandatory numerical verification', () => {
     const spacing = (r1 - rLast_radius) / (layers - 1);
     expect(spacing).toBe(50);
   });
+
+  it('trayD=530, margin=70, layers=4, rLast=100 yields correct spacing 145/3 and last layer radius 50', () => {
+    const m = buildModel(makeParams({ trayD: 530, margin: 70, layers: 4, rLast: 100 }));
+    expect(m.R).toBe(265);
+    expect(m.r1).toBe(195);
+    expect(m.dLast).toBe(100);
+    expect(m.radialStepMm).toBeCloseTo(145 / 3, 6);
+    expect(m.layers[3].r).toBe(50);
+  });
 });

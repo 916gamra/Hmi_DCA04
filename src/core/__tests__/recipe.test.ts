@@ -326,7 +326,7 @@ describe('TRIVIUM-RECIPE-v1 — serialize, validate, parse & legacy compatibilit
     expect(fromQr).not.toBeNull();
     expect(fromQr!.trayD).toBe(390);
     expect(fromQr!.layers).toBe(4);
-    expect(fromQr!.spacing).toBeCloseTo(76.3, 3);
+    expect(fromQr!.spacing).toBeCloseTo(38.15, 2);
     expect(fromQr!.rLast).toBeCloseTo(71.1, 3);
     expect(fromQr!.custom.slice(0, 4)).toEqual(DEFAULT_PARAMS.custom.slice(0, 4));
   });
@@ -343,7 +343,7 @@ describe('TRIVIUM-RECIPE-v1 — serialize, validate, parse & legacy compatibilit
     expect(parsed.params).not.toBeNull();
     expect(parsed.params!.trayD).toBe(390);
     expect(parsed.params!.layers).toBe(4);
-    expect(parsed.params!.spacing).toBeCloseTo(76.3, 3);
+    expect(parsed.params!.spacing).toBeCloseTo(38.15, 2);
     expect(parsed.params!.rLast).toBeCloseTo(71.1, 3);
     expect(parsed.params!.custom.slice(0, 4)).toEqual(DEFAULT_PARAMS.custom.slice(0, 4));
 
@@ -382,25 +382,25 @@ describe('TRIVIUM-RECIPE-v1 — serialize, validate, parse & legacy compatibilit
         tool: 5,
         margin: 40,
         layers: 4,
-        spacing: 50,
+        spacing: 25,
+        rLast: 170,
         mode: 'all',
         rawBase: 12,
         addAngle: 5,
       },
     });
     expect(res.ok).toBe(true);
-    // d1 = 400 - 80 = 320; rLast = 320 - 50 * (4 - 1) = 170
     expect(res.params!.rLast).toBeCloseTo(170, 3);
     expect(res.params!.timing.dwell).toBe(DEFAULT_PARAMS.timing.dwell);
     expect(res.params!.custom.length).toBeGreaterThanOrEqual(7);
   });
 
-  it('round-trip serializeRecipeV1 -> parseRecipeV1 preserves trayD, layers, spacing, mode', () => {
+  it('round-trip serializeRecipeV1 -> parseRecipeV1 preserves trayD, layers, rLast, mode', () => {
     const customConfig = {
       ...DEFAULT_PARAMS,
       trayD: 480,
       layers: 5,
-      spacing: 42.5,
+      rLast: 50,
       mode: 'all' as const,
     };
     const serialized = serializeRecipeV1(customConfig);
@@ -408,7 +408,7 @@ describe('TRIVIUM-RECIPE-v1 — serialize, validate, parse & legacy compatibilit
     expect(parsed.ok).toBe(true);
     expect(parsed.params!.trayD).toBe(480);
     expect(parsed.params!.layers).toBe(5);
-    expect(parsed.params!.spacing).toBeCloseTo(42.5, 3);
+    expect(parsed.params!.rLast).toBeCloseTo(50, 3);
     expect(parsed.params!.mode).toBe('all');
   });
 

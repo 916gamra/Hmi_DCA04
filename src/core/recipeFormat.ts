@@ -228,13 +228,43 @@ export function normalizeAndHydrateParams(partial: Partial<TrayParams>): TrayPar
   const tool = roundNum(merged.tool, 3);
   const margin = roundNum(merged.margin, 3);
   const layers = Math.min(7, Math.max(1, Math.round(merged.layers)));
-  const spacing = roundNum(merged.spacing, 3);
   const rawBase = sanitizeN(merged.rawBase || DEFAULT_PARAMS.rawBase);
   const addAngle = roundNum(merged.addAngle ?? DEFAULT_PARAMS.addAngle, 4);
 
-  // Geometric calculation of last layer diameter (rLast in project convention is D_last in mm)
-  const d1 = Math.max(0, trayD - 2 * margin);
-  const rLast = roundNum(Math.max(0, d1 - spacing * (layers - 1)), 3);
+  const R = trayD / 2;
+  const r1 = Math.max(0, R - margin);
+  const hasExplicitRLast =
+    partial && typeof partial === 'object' && 'rLast' in partial && partial.rLast !== undefined;
+  const hasExplicitSpacing =
+    partial && typeof partial === 'object' && 'spacing' in partial && partial.spacing !== undefined;
+
+  let rLast: number;
+  let spacing: number;
+
+  if (hasExplicitRLast) {
+    rLast = roundNum(partial.rLast!, 3);
+    const rLastR = Math.max(0, rLast / 2);
+    spacing =
+      layers > 1
+        ? roundNum((r1 - rLastR) / (layers - 1), 3)
+        : roundNum(merged.spacing, 3);
+  } else if (hasExplicitSpacing) {
+    spacing = roundNum(partial.spacing!, 3);
+    rLast = roundNum(
+      Math.max(0, 2 * r1 - 2 * spacing * (layers - 1)),
+      3
+    );
+  } else {
+    rLast = roundNum(
+      merged.rLast !== undefined ? merged.rLast : DEFAULT_PARAMS.rLast,
+      3
+    );
+    const rLastR = Math.max(0, rLast / 2);
+    spacing =
+      layers > 1
+        ? roundNum((r1 - rLastR) / (layers - 1), 3)
+        : roundNum(DEFAULT_PARAMS.spacing, 3);
+  }
 
   // Pad custom array to at least 7 layers with synchronized stepAngle = 360 / n
   const sourceCustom = Array.isArray(partial.custom)

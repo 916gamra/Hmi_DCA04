@@ -15,6 +15,18 @@ interface ParametersPanelProps {
   onAutoCalculateSpacing: () => void;
 }
 
+function deriveSpacing(
+  trayD: number,
+  margin: number,
+  layers: number,
+  rLastDiameter: number
+): number {
+  const R = trayD / 2;
+  const r1 = Math.max(0, R - margin);
+  const rLastR = Math.max(0, rLastDiameter / 2);
+  return layers > 1 ? (r1 - rLastR) / (layers - 1) : 0;
+}
+
 export const ParametersPanel: React.FC<ParametersPanelProps> = ({
   params,
   t: propT,
@@ -27,7 +39,6 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
     'geo' | 'rings' | 'pts' | 'timing' | null
   >('geo');
 
-  // D1 (قطر أول حلقة) = قطر الصينية ناقص ضعف الهامش (حيث الهامش يتكرر على طرفي القطر اليمين واليسار)
   const d1 = Math.max(0, params.trayD - 2 * params.margin);
   const radialMovement = params.spacing;
   const isSpacingSafe = radialMovement >= params.tool;
@@ -50,9 +61,17 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
 
   const handleTrayDiameter = (val: number) => {
     const mm = params.trayU === 'cm' ? val * 10 : val;
+    const newTrayD = Math.max(10, mm);
+    const newSpacing = deriveSpacing(newTrayD, params.margin, params.layers, params.rLast);
+    const spacingDisplayVal =
+      params.spacingU === 'cm'
+        ? Number((newSpacing / 10).toFixed(2))
+        : Number(newSpacing.toFixed(1));
     onChange({
-      trayD: Math.max(10, mm),
+      trayD: newTrayD,
       trayDDisplay: val,
+      spacing: Number(newSpacing.toFixed(3)),
+      spacingDisplay: spacingDisplayVal,
     });
   };
 
@@ -70,9 +89,17 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
 
   const handleMargin = (val: number) => {
     const mm = params.marginU === 'cm' ? val * 10 : val;
+    const newMargin = Math.max(0, mm);
+    const newSpacing = deriveSpacing(params.trayD, newMargin, params.layers, params.rLast);
+    const spacingDisplayVal =
+      params.spacingU === 'cm'
+        ? Number((newSpacing / 10).toFixed(2))
+        : Number(newSpacing.toFixed(1));
     onChange({
-      margin: Math.max(0, mm),
+      margin: newMargin,
       marginDisplay: val,
+      spacing: Number(newSpacing.toFixed(3)),
+      spacingDisplay: spacingDisplayVal,
     });
   };
 
@@ -91,19 +118,14 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
   const handleSpacing = (val: number) => {
     const mm = params.spacingU === 'cm' ? val * 10 : val;
     const newSpacing = Math.max(0.5, mm);
-    const R = params.trayD / 2;
-    const r1 = Math.max(0, R - params.margin);
-    const rLast_radius = Math.max(0, r1 - newSpacing * (params.layers - 1));
-    const nextDLast = 2 * rLast_radius;
-    const nextDLastDisplay =
-      params.rLastU === 'cm'
-        ? Number((nextDLast / 10).toFixed(1))
-        : Number(nextDLast.toFixed(1));
+    const spacingDisplayVal =
+      params.spacingU === 'cm'
+        ? Number((newSpacing / 10).toFixed(1))
+        : newSpacing;
+    // update spacing only, DO NOT touch rLast
     onChange({
       spacing: newSpacing,
-      spacingDisplay: val,
-      rLast: Number(nextDLast.toFixed(1)),
-      rLastDisplay: nextDLastDisplay,
+      spacingDisplay: spacingDisplayVal,
     });
   };
 
@@ -122,20 +144,11 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
   const handleRLast = (val: number) => {
     const mm = params.rLastU === 'cm' ? val * 10 : val;
     const targetDLast = Math.max(0, mm);
-    const rLast_radius = targetDLast / 2;
-    const R = params.trayD / 2;
-    const r1 = Math.max(0, R - params.margin);
-    let newSpacing = params.spacing;
-
-    if (params.layers > 1) {
-      newSpacing = (r1 - rLast_radius) / (params.layers - 1);
-      if (newSpacing < 0.5) newSpacing = 0.5;
-    }
-
-    const roundedSpacing = Number(newSpacing.toFixed(1));
+    const newSpacing = deriveSpacing(params.trayD, params.margin, params.layers, targetDLast);
+    const roundedSpacing = Number(newSpacing.toFixed(3));
     const spacingDisplayVal =
       params.spacingU === 'cm'
-        ? Number((roundedSpacing / 10).toFixed(1))
+        ? Number((roundedSpacing / 10).toFixed(2))
         : roundedSpacing;
 
     onChange({
@@ -370,7 +383,19 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                 min={1}
                 max={7}
                 step={1}
-                onChange={(val) => onChange({ layers: Math.min(7, Math.max(1, Math.round(val))) })}
+                onChange={(val) => {
+                  const newLayers = Math.min(7, Math.max(1, Math.round(val)));
+                  const newSpacing = deriveSpacing(params.trayD, params.margin, newLayers, params.rLast);
+                  const spacingDisplayVal =
+                    params.spacingU === 'cm'
+                      ? Number((newSpacing / 10).toFixed(2))
+                      : Number(newSpacing.toFixed(1));
+                  onChange({
+                    layers: newLayers,
+                    spacing: Number(newSpacing.toFixed(3)),
+                    spacingDisplay: spacingDisplayVal,
+                  });
+                }}
               />
             </div>
 
