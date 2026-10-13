@@ -3,8 +3,8 @@ import { TrayParams } from '../types';
 import { DEFAULT_PARAMS } from '../core/constants';
 import { normalizeAndHydrateParams, validateRecipeParams } from '../core/recipeFormat';
 
-export const STORAGE_KEY = 'hmi-tray-designer-oneui8-v3';
-export const STORAGE_SCHEMA_VERSION = 3;
+export const STORAGE_KEY = 'hmi-tray-designer-oneui8-v4';
+export const STORAGE_SCHEMA_VERSION = 4;
 
 interface StoredParametersPayload {
   version: number;

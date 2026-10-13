@@ -128,10 +128,8 @@ export function computeViewport(
   py: number
 ): ViewportTransform {
   const half = Math.min(w, h) / 2;
-  // Use relative margin to ensure tray scales appropriately based on available space
-  const marginPx = Math.max(20, Math.min(64, half * 0.1));
-  // Ensure base scale doesn't collapse on very small screens
-  const base = Math.max(half - marginPx, half * 0.55) / Math.max(modelR, 1);
+  const marginPx = Math.max(36, Math.min(80, half * 0.18));
+  const base = Math.max(half - marginPx, half * 0.5) / Math.max(modelR + 25, 1);
   const sc = base * zoom;
   return {
     sc,
@@ -649,6 +647,19 @@ export function renderCanvas(
       );
     }
   }
+
+  // Center Dead Zone / Hazard Disc (منطقة الموت المركزية)
+  ctx.save();
+  const deadR = Math.max(model.toolR, 8) * sc;
+  ctx.beginPath();
+  ctx.arc(cx, cy, deadR, 0, Math.PI * 2);
+  ctx.fillStyle = isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)';
+  ctx.fill();
+  ctx.strokeStyle = isDark ? 'rgba(239, 68, 68, 0.45)' : 'rgba(239, 68, 68, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.stroke();
+  ctx.restore();
 
   // 8. Machine Center Spindle
   ctx.beginPath();

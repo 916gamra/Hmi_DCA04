@@ -428,17 +428,18 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                   </button>
                 </div>
               </div>
-              <NumberStepper
-                id="spacing"
-                value={params.spacingDisplay}
-                min={params.spacingU === 'cm' ? 0.1 : 1}
-                max={params.spacingU === 'cm' ? 30 : 300}
-                step={params.spacingU === 'cm' ? 0.1 : 1}
-                unit={params.spacingU}
-                onChange={handleSpacing}
-              />
-              <span className="text-[11px] text-[#2563eb] font-semibold font-mono block mt-1">
-                {lang === 'ar' ? `تباعد شعاعي s = ${params.spacing} مم (فرق القطر بين حلقتين = ${2 * params.spacing} مم)` : `Espacement radial s = ${params.spacing} mm (ΔD diamétral = ${2 * params.spacing} mm)`}
+              <div className="opacity-90 bg-slate-50 p-2.5 rounded-xl border border-slate-200 cursor-not-allowed select-none">
+                <div className="flex items-center justify-between font-mono font-bold text-xs text-[#2563eb]">
+                  <span>s = {params.spacing} {lang === 'ar' ? 'مم' : 'mm'}</span>
+                  <span className="text-[10px] text-slate-500 font-sans">
+                    {lang === 'ar' ? `(فرق القطر = ${2 * params.spacing} مم)` : `(diam = ${2 * params.spacing} mm)`}
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] text-[#64748b] font-medium block mt-1.5 leading-relaxed">
+                {lang === 'ar'
+                  ? 'محسوب تلقائياً من شعاع أول حلقة وآخر حلقة — غير قابل للتحرير'
+                  : 'Calculé automatiquement à partir du premier et dernier rayon — non modifiable'}
               </span>
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 mt-2 space-y-1 text-[11px]">
                 <div className="flex justify-between text-[#0f172a]">
