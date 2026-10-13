@@ -1,0 +1,10 @@
+{
+  "name": "HMI Tray Designer",
+  "description": "محاكي وتصميم صواني الشاي الصناعية بنظام 3 رؤوس متزامنة وحساب مصفوفات الحفر والوصفات الصناعية TouchWin PLC بواجهة Samsung One UI 8 Light الفاخرة.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

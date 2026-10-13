@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-cairo: "Cairo", system-ui, -apple-system, sans-serif;
+    --font-sans: "Plus Jakarta Sans", "Cairo", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  html, body, #root {
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  body {
+    font-family: var(--font-cairo);
+    background-color: #f1f4f9;
+    color: #191c21;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  /* Prevent automatic iOS Safari zoom when focusing input fields */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Allow text selection only in explicit text areas or copyable code */
+  input, textarea, .selectable-text {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
+  /* Remove tap highlight color across all clickable elements and disable double-tap zoom delay */
+  button, a, input, select {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+.app-container {
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Custom Samsung One UI 8 Light styling tokens */
+.oneui-card {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.oneui-squircle {
+  border-radius: 20px;
+}
+
+.oneui-pill {
+  border-radius: 9999px;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+/* Hide number spin buttons */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Print optimizations for Recipe Sheet */
+@media print {
+  html, body, #root, .app-container {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header, aside, .no-print {
+    display: none !important;
+  }
+
+  main {
+    display: block !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .recipe-print-area {
+    display: block !important;
+    border: 2px solid #000000 !important;
+    padding: 24px !important;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+  }
+}
+
