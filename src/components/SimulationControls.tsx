@@ -76,7 +76,10 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
   }
 
   const completedHoles = state
-    ? state.counts.reduce((sum, count) => sum + count * 3, 0)
+    ? model.layers.reduce((sum, L) => {
+        const count = state.counts[L.i] || 0;
+        return sum + L.pts.filter((pt) => pt.j < count && pt.fired !== false).length;
+      }, 0)
     : 0;
 
   return (
@@ -230,7 +233,7 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
           <div>
             <span>{lang === 'ar' ? 'الثقوب: ' : 'Trous : '}</span>
             <strong className="text-[#059669]">
-              {completedHoles}/{model.totalPts}
+              {completedHoles}/{model.totalDrilled !== undefined ? model.totalDrilled : model.totalPts}
             </strong>
           </div>
         </div>

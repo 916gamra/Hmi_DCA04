@@ -576,7 +576,25 @@ describe('buildModel — machine compatibility modes (Repteur & TableMode)', () 
     expect(layer0Pts.filter((p) => p.j === 1).every((p) => p.fired === true)).toBe(true);
   });
 
-  it('tableMode=continue accumulates offsets across custom layers', () => {
+  it('tableMode=continue: numerical confirmation of DCA04 phase chaining (step=30, per=4 -> next phase=90)', () => {
+    // DCA04 Table continuity rule:
+    // rawBase=12 -> n=12 -> step=360/12=30°, per=4
+    // Layer 0: off = 0. Table performs (per - 1) = 3 index steps * 30° = 90°.
+    // Layer 1: continuous angular phase starts at 0 + 90° = 90° (with addAngle=0).
+    const m = buildModel(makeParams({
+      layers: 3,
+      rawBase: 12,
+      addAngle: 0,
+      tableMode: 'continue',
+    }));
+    expect(m.layers[0].step).toBe(30);
+    expect(m.layers[0].per).toBe(4);
+    expect(m.layers[0].off).toBe(0);
+    expect(m.layers[1].off).toBe(90);
+    expect(m.layers[2].off).toBe(180); // 90 + 90 = 180°
+  });
+
+  it('tableMode=continue accumulates continuous phase plus custom layer offsets', () => {
     const mReset = buildModel(makeParams({
       mode: 'custom',
       layers: 3,
@@ -601,8 +619,11 @@ describe('buildModel — machine compatibility modes (Repteur & TableMode)', () 
       ],
       tableMode: 'continue',
     }));
+    // Layer 0: n=6 -> per=2, step=60°. off = 10°
+    // Layer 1: 10° + (2-1)*60° + 20° = 90°
+    // Layer 2: 90° + (2-1)*60° + 30° = 180°
     expect(mContinue.layers[0].off).toBe(10);
-    expect(mContinue.layers[1].off).toBe(30); // 10 + 20
-    expect(mContinue.layers[2].off).toBe(60); // 10 + 20 + 30
+    expect(mContinue.layers[1].off).toBe(90);
+    expect(mContinue.layers[2].off).toBe(180);
   });
 });

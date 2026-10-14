@@ -85,6 +85,8 @@ export function buildModel(p: ModelParams): TrayModel {
   const repteurEnabled = Boolean(p.repteurEnabled);
   let repteurPass = p.repteurStartPass !== false;
   let accumulatedOff = 0;
+  let prevPer = 0;
+  let prevStep = 0;
 
   for (let i = 0; i < activeLayersCount; i++) {
     // For the last layer, use rLastR strictly to avoid floating point drift
@@ -103,25 +105,27 @@ export function buildModel(p: ModelParams): TrayModel {
     if (p.mode === 'all') {
       rawN = p.rawBase;
       const stepOff = p.addAngle;
+      const nClean = sanitizeN(rawN);
+      n = nClean;
+      step = 360 / nClean;
+
       if (p.tableMode === 'continue') {
-        accumulatedOff += (i === 0 ? 0 : stepOff);
+        if (i === 0) {
+          accumulatedOff = 0;
+        } else {
+          // Angular phase chaining (DCA04): table stops at the angle of the last stroke of previous layer.
+          // The table performed (prevPer - 1) index steps of prevStep each.
+          // Any explicit incremental addAngle is added on top of the continuous angular phase.
+          accumulatedOff += (prevPer - 1) * prevStep + (stepOff || 0);
+        }
         off = accumulatedOff;
       } else {
         off = i * stepOff;
       }
-      const nClean = sanitizeN(rawN);
-      n = nClean;
-      step = 360 / nClean;
     } else {
       // custom or machine mode
       const cfg = p.custom[i] || { n: p.rawBase, off: i * p.addAngle };
       const layerOff = cfg.off || 0;
-      if (p.tableMode === 'continue') {
-        accumulatedOff += layerOff;
-        off = accumulatedOff;
-      } else {
-        off = layerOff;
-      }
 
       if (cfg.stepAngle && cfg.stepAngle > 0) {
         rawN = Math.round(360 / cfg.stepAngle);
@@ -132,9 +136,22 @@ export function buildModel(p: ModelParams): TrayModel {
         n = sanitizeN(rawN);
         step = 360 / n;
       }
+
+      if (p.tableMode === 'continue') {
+        if (i === 0) {
+          accumulatedOff = layerOff;
+        } else {
+          accumulatedOff += (prevPer - 1) * prevStep + layerOff;
+        }
+        off = accumulatedOff;
+      } else {
+        off = layerOff;
+      }
     }
 
     const per = n / 3;
+    prevPer = per;
+    prevStep = step;
 
     if (Math.round(rawN) !== n) {
       warns.push({

@@ -369,4 +369,29 @@ describe('timeline — integration', () => {
     expect(reposActs[1].th1).toBeCloseTo(-m.layers[1].off, 4);
     expect(reposActs[2].th1).toBeCloseTo(-m.layers[2].off, 4);
   });
+
+  it('tableMode=continue: first fire in subsequent layer directly matches model layer off/phase without index step', () => {
+    const m = buildModel(makeParams({
+      layers: 3,
+      rawBase: 12,
+      addAngle: 0,
+      tableMode: 'continue',
+    }));
+    const tl = buildTimeline(m, makeTiming());
+
+    // Layer 0: first fire at th = -m.layers[0].off = 0
+    const fireL0First = tl.acts.find((a) => a.type === 'fire' && a.layer === 0 && a.j === 0);
+    expect(fireL0First).toBeDefined();
+    expect(fireL0First?.th0).toBeCloseTo(-m.layers[0].off, 4);
+
+    // Layer 1: first fire at th = -m.layers[1].off = -90° (table angle -90° aligns hole at +90° with head 0)
+    const fireL1First = tl.acts.find((a) => a.type === 'fire' && a.layer === 1 && a.j === 0);
+    expect(fireL1First).toBeDefined();
+    expect(fireL1First?.th0).toBeCloseTo(-m.layers[1].off, 4);
+
+    // Layer 2: first fire at th = -m.layers[2].off = -180°
+    const fireL2First = tl.acts.find((a) => a.type === 'fire' && a.layer === 2 && a.j === 0);
+    expect(fireL2First).toBeDefined();
+    expect(fireL2First?.th0).toBeCloseTo(-m.layers[2].off, 4);
+  });
 });
