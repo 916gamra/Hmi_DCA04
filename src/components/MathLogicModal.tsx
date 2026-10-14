@@ -101,20 +101,20 @@ export const MathLogicModal: React.FC<MathLogicModalProps> = ({
               </p>
             </div>
 
-            {/* Formula 2: Spacing ΔD */}
+            {/* Formula 2: Spacing s */}
             <div className="bg-[#f8fafc] border border-[#e2e8f0] p-4 rounded-2xl flex flex-col justify-between gap-2 shadow-2xs">
               <div>
                 <span className="text-[#64748b] block text-[11px] font-bold">
-                  {isAr ? '2. التباعد القطري المتساوي (ΔD)' : '2. Espacement radial (ΔD)'}
+                  {isAr ? '2. التباعد الشعاعي المتساوي (s / Spacing)' : '2. Espacement radial uniforme (s / Spacing)'}
                 </span>
                 <strong className="text-[#2563eb] font-mono block mt-1.5 text-sm sm:text-base">
-                  ΔD = {params.spacing} mm
+                  s = {params.spacing} mm
                 </strong>
               </div>
               <p className="text-[11px] text-[#64748b] leading-normal pt-2 border-t border-[#e2e8f0]/80">
                 {isAr
-                  ? `ΔD = (${fmt(model.d1)} − ${fmt(model.dLast)}) ÷ (${params.layers} − 1) لتوزيع الطبقات بانتظام هندسي دقيق.`
-                  : `ΔD = (${fmt(model.d1)} − ${fmt(model.dLast)}) ÷ (${params.layers} − 1) pour une répartition uniforme.`}
+                  ? `s = (R₁ − R_fin) ÷ (${params.layers} − 1) = (${fmt(model.r1)} − ${fmt(model.rLast)}) ÷ (${params.layers} − 1) = ${params.spacing} مم (جهة واحدة).`
+                  : `s = (R₁ − R_fin) ÷ (${params.layers} − 1) = (${fmt(model.r1)} − ${fmt(model.rLast)}) ÷ (${params.layers} − 1) = ${params.spacing} mm (radial).`}
               </p>
             </div>
 
@@ -122,7 +122,7 @@ export const MathLogicModal: React.FC<MathLogicModalProps> = ({
             <div className="bg-[#f8fafc] border border-[#e2e8f0] p-4 rounded-2xl flex flex-col justify-between gap-2 shadow-2xs">
               <div>
                 <span className="text-[#64748b] block text-[11px] font-bold">
-                  {isAr ? '3. خطوة حركة السيرفو بالآلة' : '3. Course servomoteur machine'}
+                  {isAr ? '3. خطوة حركة السيرفو بالآلة (Expansion Length)' : '3. Course servomoteur machine (Expansion Length)'}
                 </span>
                 <strong className="text-[#059669] font-mono block mt-1.5 text-sm sm:text-base">
                   {fmt(model.radialStepMm)} mm
@@ -130,8 +130,8 @@ export const MathLogicModal: React.FC<MathLogicModalProps> = ({
               </div>
               <p className="text-[11px] text-[#64748b] leading-normal pt-2 border-t border-[#e2e8f0]/80">
                 {isAr
-                  ? `طول التمدد (Expansion Length) بين كل طبقة والتي تليها على محور X: نصف التباعد القطري (ΔD ÷ 2).`
-                  : `Longueur d'expansion sur l'axe X entre couches consécutives : demi-espacement radial (ΔD ÷ 2).`}
+                  ? `طول التمدد (Expansion Length) بين كل طبقة والتي تليها على السيرفو الشعاعي يساوي التباعد الشعاعي مباشرة: s = ${fmt(model.radialStepMm)} مم.`
+                  : `Longueur d'expansion sur l'axe radial entre couches consécutives égale l'espacement radial : s = ${fmt(model.radialStepMm)} mm.`}
               </p>
             </div>
           </div>
@@ -183,7 +183,7 @@ export const MathLogicModal: React.FC<MathLogicModalProps> = ({
                   <th className="py-2.5 px-3 font-bold text-center">Tray D</th>
                   <th className="py-2.5 px-3 font-bold text-center">Margin</th>
                   <th className="py-2.5 px-3 font-bold text-center">Layers</th>
-                  <th className="py-2.5 px-3 font-bold text-center">Spacing ΔD</th>
+                  <th className="py-2.5 px-3 font-bold text-center">Spacing s</th>
                   <th className="py-2.5 px-3 font-bold text-center">Tool D</th>
                   <th className="py-2.5 px-3 font-bold text-center">Safety Clearance</th>
                   <th className="py-2.5 px-3 font-bold text-center">Total Points</th>

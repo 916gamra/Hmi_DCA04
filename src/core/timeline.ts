@@ -61,6 +61,7 @@ export function buildTimeline(m: TrayModel, tm?: TrayTiming): Timeline {
       }
 
       // Synchronized drill fire (all 3 heads simultaneously plunge and retract)
+      const isFired = L.pts.length > 0 ? L.pts.some((pt) => pt.j === j && pt.fired !== false) : true;
       acts.push({
         type: 'fire',
         t0: t,
@@ -71,6 +72,7 @@ export function buildTimeline(m: TrayModel, tm?: TrayTiming): Timeline {
         r1: L.r,
         th0: th,
         th1: th,
+        fired: isFired,
       });
       t += dDwell;
     }

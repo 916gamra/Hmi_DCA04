@@ -172,11 +172,11 @@ export function generateCsvPoints(model: TrayModel): string {
 }
 
 export function generateCompactQrPayload(p: TrayParams, model: TrayModel, totalCycleMs: number): string {
-  // A compact human & machine-readable payload suitable for QR codes (<500 chars)
   const hydrated = normalizeAndHydrateParams(p);
   const layerSummary = Array.from({ length: hydrated.layers }, (_, i) => {
     const modelLayer = model.layers[i];
-    const r = modelLayer ? modelLayer.r : Math.max(0, (hydrated.trayD - 2 * hydrated.margin) / 2 - i * (hydrated.spacing / 2));
+    const r1 = Math.max(0, hydrated.trayD / 2 - hydrated.margin);
+    const r = modelLayer ? modelLayer.r : Math.max(0, r1 - i * hydrated.spacing);
     const c =
       hydrated.mode === 'all'
         ? { n: hydrated.rawBase, off: i * hydrated.addAngle }

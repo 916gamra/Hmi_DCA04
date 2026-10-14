@@ -53,6 +53,9 @@ export const DEFAULT_PARAMS: TrayParams = {
   pulsesPerMm: 100,
   timingMode: 'hz',
   speed: 1,
+  repteurEnabled: false,
+  repteurStartPass: true,
+  tableMode: 'reset',
 };
 
 export const PRESETS: RecipePreset[] = [

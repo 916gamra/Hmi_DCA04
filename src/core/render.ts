@@ -480,13 +480,34 @@ export function renderCanvas(
       const [x, y] = transformPoint(q.x, q.y, theta);
       if (x < -30 || y < -30 || x > w + 30 || y > h + 30) continue;
 
-      const isDrilled = !state || q.j < state.counts[L.i];
+      const isSkipped = q.fired === false;
+      const isDrilled = !isSkipped && (!state || q.j < state.counts[L.i]);
       const col = options.heads ? HEADS[q.head].color : layerColor;
 
       ctx.beginPath();
       ctx.arc(x, y, rp, 0, Math.PI * 2);
 
-      if (isDrilled) {
+      if (isSkipped) {
+        // Ghost / Phantom stroke for Repteur skipped punch
+        ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.25)' : 'rgba(241, 245, 249, 0.5)';
+        ctx.fill();
+        ctx.lineWidth = isDark ? 1.2 : 1.0;
+        ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.45)' : 'rgba(148, 163, 184, 0.55)';
+        ctx.setLineDash([3, 2.5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Small subtle center cross for visual clarity
+        const cLen = Math.max(rp * 0.35, 1.5);
+        ctx.beginPath();
+        ctx.moveTo(x - cLen, y);
+        ctx.lineTo(x + cLen, y);
+        ctx.moveTo(x, y - cLen);
+        ctx.lineTo(x, y + cLen);
+        ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.35)' : 'rgba(148, 163, 184, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else if (isDrilled) {
         const holeGrad = ctx.createRadialGradient(x - rp * 0.2, y - rp * 0.2, rp * 0.1, x, y, rp);
         holeGrad.addColorStop(0, palette.holeGrad0);
         holeGrad.addColorStop(0.85, palette.holeGrad1);
@@ -508,7 +529,7 @@ export function renderCanvas(
       }
 
       // Overlap / collision indicator
-      if (q.bad) {
+      if (q.bad && !isSkipped) {
         ctx.beginPath();
         ctx.arc(x, y, rp + 3.5, 0, Math.PI * 2);
         ctx.strokeStyle = '#ef4444';
@@ -521,9 +542,18 @@ export function renderCanvas(
         const pulse = state.u;
         ctx.beginPath();
         ctx.arc(x, y, rp + 2 + 6 * pulse, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(56, 189, 248, ${(1 - pulse * 0.6).toFixed(2)})`;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+        if (isSkipped) {
+          // Subtle dashed indicator for skipped stroke
+          ctx.strokeStyle = `rgba(148, 163, 184, ${(0.6 - pulse * 0.5).toFixed(2)})`;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([2.5, 2.5]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          ctx.strokeStyle = `rgba(56, 189, 248, ${(1 - pulse * 0.6).toFixed(2)})`;
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
       }
 
       // Hover ring

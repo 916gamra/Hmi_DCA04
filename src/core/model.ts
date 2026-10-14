@@ -81,6 +81,11 @@ export function buildModel(p: ModelParams): TrayModel {
   const all: Point[] = [];
   const warns: Warn[] = [];
 
+  // Machine modes setup
+  const repteurEnabled = Boolean(p.repteurEnabled);
+  let repteurPass = p.repteurStartPass !== false;
+  let accumulatedOff = 0;
+
   for (let i = 0; i < activeLayersCount; i++) {
     // For the last layer, use rLastR strictly to avoid floating point drift
     const r =
@@ -97,28 +102,27 @@ export function buildModel(p: ModelParams): TrayModel {
     // لذلك نُعيد دائماً حساب step = 360 / n بعد sanitizeN لضمان إغلاق الدائرة بدقة.
     if (p.mode === 'all') {
       rawN = p.rawBase;
-      off = i * p.addAngle;
+      const stepOff = p.addAngle;
+      if (p.tableMode === 'continue') {
+        accumulatedOff += (i === 0 ? 0 : stepOff);
+        off = accumulatedOff;
+      } else {
+        off = i * stepOff;
+      }
       const nClean = sanitizeN(rawN);
       n = nClean;
       step = 360 / nClean;
-    } else if (p.mode === 'machine') {
-      // TouchWin machine recipe mode
-      const cfg = p.custom[i] || { n: p.rawBase, off: i * p.addAngle };
-      off = cfg.off || 0;
-      if (cfg.stepAngle && cfg.stepAngle > 0) {
-        rawN = Math.round(360 / cfg.stepAngle);
-        n = sanitizeN(rawN);
-        step = 360 / n;
-      } else {
-        rawN = cfg.n || p.rawBase;
-        n = sanitizeN(rawN);
-        step = 360 / n;
-      }
     } else {
-      // custom mode
+      // custom or machine mode
       const cfg = p.custom[i] || { n: p.rawBase, off: i * p.addAngle };
-      off = cfg.off || 0;
-      // Note: stepAngle and n must be kept synchronized from the UI layer.
+      const layerOff = cfg.off || 0;
+      if (p.tableMode === 'continue') {
+        accumulatedOff += layerOff;
+        off = accumulatedOff;
+      } else {
+        off = layerOff;
+      }
+
       if (cfg.stepAngle && cfg.stepAngle > 0) {
         rawN = Math.round(360 / cfg.stepAngle);
         n = sanitizeN(rawN);
@@ -139,19 +143,33 @@ export function buildModel(p: ModelParams): TrayModel {
       });
     }
 
+    // Repteur stroke mask mapping per index step j
+    const strokePassMap: Record<number, boolean> = {};
+    for (let j = 0; j < per; j++) {
+      if (repteurEnabled) {
+        strokePassMap[j] = repteurPass;
+        repteurPass = !repteurPass;
+      } else {
+        strokePassMap[j] = true;
+      }
+    }
+
     const pts: Point[] = [];
     for (let k = 0; k < n; k++) {
       const a = norm360(k * step + off);
       const rad = a * DEG;
+      const j = k % per;
+      const isFired = strokePassMap[j] !== undefined ? strokePassMap[j] : true;
       pts.push({
         layer: i,
         k,
         head: Math.floor(k / per),
-        j: k % per,
+        j,
         a,
         x: r * Math.cos(rad),
         y: r * Math.sin(rad),
         bad: false,
+        fired: isFired,
       });
     }
 
@@ -172,15 +190,17 @@ export function buildModel(p: ModelParams): TrayModel {
     }
   }
 
-  // Exact pairwise clearance calculation (Euclidean distance between all hole centers)
+  // Exact pairwise clearance calculation (Euclidean distance between drilled hole centers)
   let minD = Infinity;
   let badCount = 0;
   const thr = p.tool + SAFETY_CLEARANCE_MM - 1e-6; // clearance threshold = tool diameter + safety clearance
 
   for (let a = 0; a < all.length; a++) {
     const A = all[a];
+    if (A.fired === false) continue; // ثقب معترض بقناع Repteur
     for (let b = a + 1; b < all.length; b++) {
       const B = all[b];
+      if (B.fired === false) continue; // ثقب معترض بقناع Repteur
       const dx = A.x - B.x;
       const dy = A.y - B.y;
       const d = Math.sqrt(dx * dx + dy * dy);
@@ -259,6 +279,7 @@ export function buildModel(p: ModelParams): TrayModel {
   });
 
   const totalPts = all.length;
+  const totalDrilled = all.filter((pt) => pt.fired !== false).length;
   const totalSteps = layers.reduce((s, l) => s + l.per, 0);
 
   return {
@@ -275,6 +296,7 @@ export function buildModel(p: ModelParams): TrayModel {
     badCount,
     warns,
     totalPts,
+    totalDrilled,
     totalSteps,
     hasErr: warns.some((w) => w.lv === 'err'),
     hasWarn: warns.some((w) => w.lv === 'warn'),

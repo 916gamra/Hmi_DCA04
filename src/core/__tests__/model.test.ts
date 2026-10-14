@@ -532,3 +532,77 @@ describe('buildModel — mandatory numerical verification', () => {
     expect(m.layers[3].r).toBe(50);
   });
 });
+
+describe('buildModel — machine compatibility modes (Repteur & TableMode)', () => {
+  it('default has repteurEnabled=false, all points are fired=true and totalDrilled equals totalPts', () => {
+    const m = buildModel(makeParams({ layers: 3, rawBase: 6 }));
+    expect(m.totalPts).toBe(18);
+    expect(m.totalDrilled).toBe(18);
+    expect(m.all.every((p) => p.fired === true)).toBe(true);
+  });
+
+  it('repteurEnabled=true with repteurStartPass=true alternates fired state', () => {
+    // 2 layers, rawBase=6 -> per=2 steps per layer -> total 4 steps
+    // Step 0: pass (fired: true)
+    // Step 1: intercept (fired: false)
+    // Step 2 (layer 1 step 0): pass (fired: true)
+    // Step 3 (layer 1 step 1): intercept (fired: false)
+    const m = buildModel(makeParams({
+      layers: 2,
+      rawBase: 6,
+      repteurEnabled: true,
+      repteurStartPass: true,
+    }));
+    expect(m.totalPts).toBe(12);
+    expect(m.totalDrilled).toBe(6); // 2 steps * 3 heads = 6 fired holes
+    const layer0Pts = m.layers[0].pts;
+    // Step j=0 has fired: true, j=1 has fired: false
+    expect(layer0Pts.filter((p) => p.j === 0).every((p) => p.fired === true)).toBe(true);
+    expect(layer0Pts.filter((p) => p.j === 1).every((p) => p.fired === false)).toBe(true);
+  });
+
+  it('repteurEnabled=true with repteurStartPass=false starts by intercepting first stroke', () => {
+    const m = buildModel(makeParams({
+      layers: 2,
+      rawBase: 6,
+      repteurEnabled: true,
+      repteurStartPass: false,
+    }));
+    expect(m.totalPts).toBe(12);
+    expect(m.totalDrilled).toBe(6);
+    const layer0Pts = m.layers[0].pts;
+    // First step j=0 intercepted -> fired: false, j=1 passed -> fired: true
+    expect(layer0Pts.filter((p) => p.j === 0).every((p) => p.fired === false)).toBe(true);
+    expect(layer0Pts.filter((p) => p.j === 1).every((p) => p.fired === true)).toBe(true);
+  });
+
+  it('tableMode=continue accumulates offsets across custom layers', () => {
+    const mReset = buildModel(makeParams({
+      mode: 'custom',
+      layers: 3,
+      custom: [
+        { n: 6, off: 10 },
+        { n: 6, off: 20 },
+        { n: 6, off: 30 },
+      ],
+      tableMode: 'reset',
+    }));
+    expect(mReset.layers[0].off).toBe(10);
+    expect(mReset.layers[1].off).toBe(20);
+    expect(mReset.layers[2].off).toBe(30);
+
+    const mContinue = buildModel(makeParams({
+      mode: 'custom',
+      layers: 3,
+      custom: [
+        { n: 6, off: 10 },
+        { n: 6, off: 20 },
+        { n: 6, off: 30 },
+      ],
+      tableMode: 'continue',
+    }));
+    expect(mContinue.layers[0].off).toBe(10);
+    expect(mContinue.layers[1].off).toBe(30); // 10 + 20
+    expect(mContinue.layers[2].off).toBe(60); // 10 + 20 + 30
+  });
+});

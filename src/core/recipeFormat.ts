@@ -46,6 +46,9 @@ export interface TriviumRecipeV1 {
     expansionSpeedHz: number;
     pulsesPerRev: number;
     pulsesPerMm: number;
+    repteurEnabled?: boolean;
+    repteurStartPass?: boolean;
+    tableMode?: 'reset' | 'continue';
   };
 }
 
@@ -310,6 +313,12 @@ export function normalizeAndHydrateParams(partial: Partial<TrayParams>): TrayPar
     pulsesPerMm: Math.round(merged.pulsesPerMm || DEFAULT_PARAMS.pulsesPerMm),
     timingMode: merged.timingMode || 'hz',
     speed: merged.speed || 1,
+    repteurEnabled: Boolean(partial.repteurEnabled ?? DEFAULT_PARAMS.repteurEnabled ?? false),
+    repteurStartPass:
+      partial.repteurStartPass !== undefined
+        ? Boolean(partial.repteurStartPass)
+        : (DEFAULT_PARAMS.repteurStartPass ?? true),
+    tableMode: partial.tableMode === 'continue' ? 'continue' : 'reset',
   };
 }
 
@@ -362,6 +371,9 @@ export function serializeRecipeV1(
       expansionSpeedHz: roundNum(hydrated.expansionSpeedHz, 3),
       pulsesPerRev: Math.round(hydrated.pulsesPerRev),
       pulsesPerMm: Math.round(hydrated.pulsesPerMm),
+      repteurEnabled: hydrated.repteurEnabled,
+      repteurStartPass: hydrated.repteurStartPass,
+      tableMode: hydrated.tableMode,
     },
   };
 

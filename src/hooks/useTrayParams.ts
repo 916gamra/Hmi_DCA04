@@ -3,8 +3,8 @@ import { TrayParams } from '../types';
 import { DEFAULT_PARAMS } from '../core/constants';
 import { normalizeAndHydrateParams, validateRecipeParams } from '../core/recipeFormat';
 
-export const STORAGE_KEY = 'hmi-tray-designer-oneui8-v4';
-export const STORAGE_SCHEMA_VERSION = 4;
+export const STORAGE_KEY = 'hmi-tray-designer-oneui8-v5';
+export const STORAGE_SCHEMA_VERSION = 5;
 
 interface StoredParametersPayload {
   version: number;
@@ -37,7 +37,34 @@ export function loadInitialParams(): TrayParams {
       }
     }
 
-    // Attempt migration from v2 or legacy keys if available
+    // Attempt migration from v4 or legacy keys if available
+    const oldV4 = localStorage.getItem('hmi-tray-designer-oneui8-v4');
+    if (oldV4) {
+      try {
+        const parsedV4 = JSON.parse(oldV4);
+        const candidateV4 =
+          parsedV4 && typeof parsedV4 === 'object' && 'params' in parsedV4
+            ? parsedV4.params
+            : parsedV4;
+        if (
+          candidateV4 &&
+          typeof candidateV4 === 'object' &&
+          typeof candidateV4.trayD === 'number' &&
+          Number.isFinite(candidateV4.trayD) &&
+          candidateV4.trayD > 0
+        ) {
+          localStorage.removeItem('hmi-tray-designer-oneui8-v4');
+          const hydratedV4 = normalizeAndHydrateParams(candidateV4);
+          if (validateRecipeParams(hydratedV4).ok) {
+            return hydratedV4;
+          }
+        }
+      } catch {
+        localStorage.removeItem('hmi-tray-designer-oneui8-v4');
+      }
+    }
+
+    // Attempt migration from v2 if available
     const oldV2 = localStorage.getItem('hmi-tray-designer-oneui8-v2');
     if (oldV2) {
       try {

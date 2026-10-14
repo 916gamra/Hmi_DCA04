@@ -14,6 +14,7 @@ export interface Point {
   x: number;
   y: number;
   bad: boolean;
+  fired?: boolean; // هل تم حفر النقطة أم اعترضها قناع Repteur (الافتراضي true)
 }
 
 export interface Layer {
@@ -73,6 +74,10 @@ export interface TrayParams {
   pulsesPerMm: number;
   timingMode: 'hz' | 'ms';
   speed: number;
+  // Optional machine compatibility modes
+  repteurEnabled?: boolean;          // Default false: قناع الضربات المتناوبة
+  repteurStartPass?: boolean;        // Default true: أول ضربة في أول طبقة تمر
+  tableMode?: 'reset' | 'continue'; // Default 'reset': مرجع مطلق (إعادة للصفر) أو استمرار زاوي
 }
 
 export interface TrayModel {
@@ -82,13 +87,14 @@ export interface TrayModel {
   rLast: number;
   d1: number;     // Diameter of Layer 1 = 2 * r1
   dLast: number;  // Diameter of Last Layer = 2 * rLast
-  radialStepMm: number; // Radial movement per layer = spacing / 2
+  radialStepMm: number; // Radial movement per layer = spacing (single-sided radial step)
   layers: Layer[];
   all: Point[];
   minD: number;
   badCount: number;
   warns: Warn[];
   totalPts: number;
+  totalDrilled: number; // عدد الثقوب المحفورة فعلياً بعد تطبيق قناع Repteur
   totalSteps: number;
   hasErr: boolean;
   hasWarn: boolean;
@@ -104,6 +110,7 @@ export interface TimelineAction {
   r1: number;
   th0: number;
   th1: number;
+  fired?: boolean; // لقناع Repteur أثناء ضربات الحفر
 }
 
 export interface Timeline {

@@ -121,6 +121,22 @@ export interface Translations {
   recipeCopied: string;
   btnPrintRecipe: string;
 
+  // Machine Modes
+  cardMachineModesTitle: string;
+  cardMachineModesDesc: string;
+  repteurLabel: string;
+  repteurHelp: string;
+  repteurFirstStroke: string;
+  repteurPass: string;
+  repteurIntercept: string;
+  tableModeLabel: string;
+  tableModeReset: string;
+  tableModeResetHelp: string;
+  tableModeContinue: string;
+  tableModeContinueHelp: string;
+  drilledHolesCount: string;
+  drilledOfTotal: string;
+
   // Auto Page
   autoTitle: string;
   autoSubtitle: string;
@@ -149,7 +165,7 @@ export const translations: Record<Language, Translations> = {
     margin: 'هامش الطبقة الأولى عن الحافة',
     cardRingsTitle: 'الدوائر متحدة المركز والتباعد',
     layersCount: 'عدد الطبقات الحلقية (الحد الأقصى بالآلة: 7)',
-    spacing: 'تباعد القطر بين كل طبقتين (ΔD)',
+    spacing: 'التباعد الشعاعي بين الطبقات (s / Spacing)',
     lastLayerD: 'قطر آخر طبقة في المركز (D_آخر)',
     spacingLaw: 'قانون التباعد بين الطبقتين:',
     servoRadialCourse: 'حركة رأس الحفر على السيرفو الشعاعي:',
@@ -157,9 +173,9 @@ export const translations: Record<Language, Translations> = {
     mathDocMarginTitle: '1. الهامش (Margin):',
     mathDocMarginDesc: 'هو أول تباعد يدوي يقيسه العامل بين محيط الصينية وأول طبقة:',
     mathDocMarginNote: '(هذه القيمة في تطبيقنا لضمان دقة العامل وتفادي الحافة، وليست مبرمجة في الآلة).',
-    mathDocUniformSpacing: '2. التباعد المتساوي (ΔD):',
+    mathDocUniformSpacing: '2. التباعد الشعاعي المنتظم (s):',
     mathDocServoMove: '3. حركة السيرفو بالآلة (Expansion Length):',
-    mathDocServoMoveDesc: 'تتحرك ذراع الرأس شعاعياً بمقدار نصف تباعد القطر:',
+    mathDocServoMoveDesc: 'تتحرك ذراع الرأس شعاعياً بمقدار التباعد الشعاعي مباشرة (s):',
     layerDistributionTitle: 'توزيع أقطار الطبقات الحالي (متساوٍ بانتظام):',
     customModeHeader: 'تخصيص كل طبقة (النقاط وإزاحة الزاوية بدون كيبورد):',
     customModeStepAngle: 'زاوية الخطوة:',
@@ -243,6 +259,21 @@ export const translations: Record<Language, Translations> = {
     btnCopyRecipe: 'نسخ الوصفة للعامل',
     recipeCopied: 'تم نسخ الوصفة!',
     btnPrintRecipe: 'طباعة ورقة الوصفة',
+
+    cardMachineModesTitle: 'أوضاع الآلة والتوافق الصناعي',
+    cardMachineModesDesc: 'أوضاع اختيارية لمطابقة آلات قديمة (DCA04) ودورات القناع بدون تغيير الهندسة الشعاعية الأساسية',
+    repteurLabel: 'قناع الضربات المتناوبة (Repteur)',
+    repteurHelp: 'حفر ضربة وتخطي ضربة بالتناوب المتصل لمحاكاة صمام التجاوز الميكانيكي/الهوائي بالآلة',
+    repteurFirstStroke: 'حالة أول ضربة في الطبقة الأولى:',
+    repteurPass: 'تمر (حفر فعلي)',
+    repteurIntercept: 'تُعترض (تخطي وفراغ)',
+    tableModeLabel: 'وضع مرجع الطاولة الدوارة (Table Mode):',
+    tableModeReset: 'مرجع مطلق (إعادة للصفر)',
+    tableModeResetHelp: 'إعادة تصفير الزاوية وبدء كل طبقة من إزاحتها المستقلة عن الصفر',
+    tableModeContinue: 'استمرار زاوي (آلة DCA04)',
+    tableModeContinueHelp: 'تراكم إزاحات الزوايا واستمرار الطاولة من زاوية التوقف دون الرجوع للصفر المطلق',
+    drilledHolesCount: 'الثقوب الفعلية المحفورة',
+    drilledOfTotal: 'ثقب محفور من إجمالي',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -266,7 +297,7 @@ export const translations: Record<Language, Translations> = {
     margin: 'Marge extérieure (bord du plateau)',
     cardRingsTitle: 'Cercles concentriques & Espacement',
     layersCount: 'Nombre de couches (Max machine : 7)',
-    spacing: 'Espacement diamètre entre 2 couches (ΔD)',
+    spacing: 'Espacement radial entre couches (s / Spacing)',
     lastLayerD: 'Diamètre dernière couche au centre (D_fin)',
     spacingLaw: "Règle d'espacement des couches :",
     servoRadialCourse: 'Course radiale du servo :',
@@ -274,9 +305,9 @@ export const translations: Record<Language, Translations> = {
     mathDocMarginTitle: '1. Marge extérieure (Bord) :',
     mathDocMarginDesc: 'Premier espacement mesuré manuellement entre le bord du plateau et la 1ère couche :',
     mathDocMarginNote: '(Valeur intégrée dans notre app pour la précision de l’opérateur, non programmée dans la machine).',
-    mathDocUniformSpacing: '2. Espacement uniforme (ΔD) :',
+    mathDocUniformSpacing: '2. Espacement radial uniforme (s) :',
     mathDocServoMove: '3. Course du servomoteur machine (Expansion Length) :',
-    mathDocServoMoveDesc: 'Le bras se déplace radialement de la moitié du pas de diamètre :',
+    mathDocServoMoveDesc: 'Le bras se déplace radialement de la valeur de l’espacement radial (s) :',
     layerDistributionTitle: 'Répartition actuelle des diamètres (uniforme) :',
     customModeHeader: 'Personnalisation de chaque couche (points & décalages) :',
     customModeStepAngle: 'Angle de pas :',
@@ -360,5 +391,20 @@ export const translations: Record<Language, Translations> = {
     btnCopyRecipe: 'Copier la recette pour l\'opérateur',
     recipeCopied: 'Recette copiée !',
     btnPrintRecipe: 'Imprimer la fiche recette',
+
+    cardMachineModesTitle: 'Modes Machine & Rétrocompatibilité',
+    cardMachineModesDesc: 'Modes optionnels pour correspondre aux machines historiques (DCA04) sans altérer la géométrie radiale',
+    repteurLabel: 'Masque de frappe alternée (Répteur)',
+    repteurHelp: 'Perce une frappe et saute la suivante en alternance continue (vanne mécanique/pneumatique)',
+    repteurFirstStroke: 'État de la 1ère frappe (couche 1) :',
+    repteurPass: 'Passer (perçage)',
+    repteurIntercept: 'Intercepter (saut vide)',
+    tableModeLabel: 'Mode de référence plateau rotatif :',
+    tableModeReset: 'Référence absolue (Remise à zéro)',
+    tableModeResetHelp: 'Remise à zéro et calcul d\'angle indépendant pour chaque couche',
+    tableModeContinue: 'Continuité angulaire (DCA04)',
+    tableModeContinueHelp: 'Cumul des décalages angulaires sans retour forcé au zéro absolu',
+    drilledHolesCount: 'Trous réellement percés',
+    drilledOfTotal: 'trous percés sur un total de',
   },
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Sliders, Disc, Calculator, Clock } from 'lucide-react';
+import { ChevronDown, Sliders, Disc, Calculator, Clock, Settings2 } from 'lucide-react';
 import { TrayParams, TrayModel } from '../types';
 import { NumberStepper } from './NumberStepper';
 import { LAYER_COLORS } from '../core/constants';
@@ -36,14 +36,14 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
 }) => {
   const t = propT || translations[lang];
   const [openSection, setOpenSection] = React.useState<
-    'geo' | 'rings' | 'pts' | 'timing' | null
+    'geo' | 'rings' | 'pts' | 'timing' | 'modes' | null
   >('geo');
 
   const d1 = Math.max(0, params.trayD - 2 * params.margin);
   const radialMovement = params.spacing;
   const isSpacingSafe = radialMovement >= params.tool;
 
-  const toggleSection = (key: 'geo' | 'rings' | 'pts' | 'timing') => {
+  const toggleSection = (key: 'geo' | 'rings' | 'pts' | 'timing' | 'modes') => {
     setOpenSection((prev) => (prev === key ? null : key));
   };
 
@@ -115,16 +115,13 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
     });
   };
 
-  const handleSpacing = (val: number) => {
-    const mm = params.spacingU === 'cm' ? val * 10 : val;
-    const newSpacing = Math.max(0.5, mm);
+  const handleSpacing = () => {
+    const derived = deriveSpacing(params.trayD, params.margin, params.layers, params.rLast);
+    const rounded = Number(derived.toFixed(3));
     const spacingDisplayVal =
-      params.spacingU === 'cm'
-        ? Number((newSpacing / 10).toFixed(1))
-        : newSpacing;
-    // update spacing only, DO NOT touch rLast
+      params.spacingU === 'cm' ? Number((rounded / 10).toFixed(2)) : rounded;
     onChange({
-      spacing: newSpacing,
+      spacing: rounded,
       spacingDisplay: spacingDisplayVal,
     });
   };
@@ -354,7 +351,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
             <div className="min-w-0 flex flex-col text-left">
               <h2 className="text-sm font-bold text-[#0f172a] truncate">{t.cardRingsTitle}</h2>
               <span className="text-[11px] font-mono text-[#64748b] truncate mt-0.5">
-                {params.layers} {lang === 'ar' ? 'طبقات' : 'couches'} • ΔD = {params.spacing} mm • D₁ = {d1.toFixed(1)} mm
+                {params.layers} {lang === 'ar' ? 'طبقات' : 'couches'} • s = {params.spacing} mm • D₁ = {d1.toFixed(1)} mm
               </span>
             </div>
           </div>
@@ -949,6 +946,142 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
             <p className="text-[11px] text-[#64748b] leading-relaxed">
               {t.timingNote}
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Card 5: Machine Modes & Industrial Retrocompatibility (Repteur / Table Mode) */}
+      <div className="bg-white rounded-2xl shadow-xs border border-[#e2e8f0] overflow-hidden transition-all duration-200">
+        <button
+          type="button"
+          onClick={() => toggleSection('modes')}
+          className="w-full px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between hover:bg-[#f8fafc] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
+          aria-expanded={openSection === 'modes'}
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-xl bg-[#ecfdf5] text-[#059669]">
+              <Settings2 className="w-4 h-4" />
+            </span>
+            <div className="flex flex-col text-right">
+              <span className="font-bold text-xs sm:text-sm text-[#0f172a]">
+                {t.cardMachineModesTitle}
+              </span>
+              <span className="text-[10px] text-[#64748b]">
+                {params.repteurEnabled ? (lang === 'ar' ? 'Repteur مفعّل' : 'Répteur actif') : (lang === 'ar' ? 'الوضع القياسي' : 'Mode standard')} • {params.tableMode === 'continue' ? (lang === 'ar' ? 'استمرار زاوي' : 'Continuité') : (lang === 'ar' ? 'مرجع مطلق' : 'Absolu')}
+              </span>
+            </div>
+          </div>
+          <ChevronDown
+            className={`w-4 h-4 text-[#94a3b8] transition-transform duration-200 ${
+              openSection === 'modes' ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+
+        {openSection === 'modes' && (
+          <div className="p-4 sm:p-5 pt-1 border-t border-[#f1f5f9] flex flex-col gap-4">
+            <p className="text-[11px] text-[#64748b] leading-relaxed">
+              {t.cardMachineModesDesc}
+            </p>
+
+            {/* Repteur Mode Toggle */}
+            <div className="p-3 sm:p-3.5 rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[#0f172a]">
+                    {t.repteurLabel}
+                  </span>
+                  <span className="text-[10px] text-[#64748b] leading-normal">
+                    {t.repteurHelp}
+                  </span>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={Boolean(params.repteurEnabled)}
+                    onChange={(e) => onChange({ repteurEnabled: e.target.checked })}
+                  />
+                  <div className="w-11 h-6 bg-[#cbd5e1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-[#cbd5e1] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#059669]" />
+                </label>
+              </div>
+
+              {/* Repteur Starting Stroke Options */}
+              {params.repteurEnabled && (
+                <div className="pt-2.5 border-t border-[#e2e8f0] flex flex-col gap-2">
+                  <span className="text-[11px] font-semibold text-[#334155]">
+                    {t.repteurFirstStroke}
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onChange({ repteurStartPass: true })}
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                        params.repteurStartPass !== false
+                          ? 'bg-[#ecfdf5] border-[#059669] text-[#065f46] shadow-2xs'
+                          : 'bg-white border-[#cbd5e1] text-[#64748b] hover:bg-[#f1f5f9]'
+                      }`}
+                    >
+                      {t.repteurPass}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onChange({ repteurStartPass: false })}
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                        params.repteurStartPass === false
+                          ? 'bg-[#ecfdf5] border-[#059669] text-[#065f46] shadow-2xs'
+                          : 'bg-white border-[#cbd5e1] text-[#64748b] hover:bg-[#f1f5f9]'
+                      }`}
+                    >
+                      {t.repteurIntercept}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Table Angular Reference Mode */}
+            <div className="p-3 sm:p-3.5 rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] flex flex-col gap-2.5">
+              <span className="text-xs font-bold text-[#0f172a]">
+                {t.tableModeLabel}
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onChange({ tableMode: 'reset' })}
+                  className={`p-2.5 rounded-xl text-right flex flex-col gap-1 transition-all border ${
+                    params.tableMode !== 'continue'
+                      ? 'bg-white border-[#2563eb] text-[#0f172a] shadow-xs ring-1 ring-[#2563eb]'
+                      : 'bg-[#f1f5f9] border-[#e2e8f0] text-[#64748b] hover:bg-white'
+                  }`}
+                >
+                  <span className="text-xs font-bold text-[#0f172a]">
+                    {t.tableModeReset}
+                  </span>
+                  <span className="text-[10px] text-[#64748b] leading-tight">
+                    {t.tableModeResetHelp}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onChange({ tableMode: 'continue' })}
+                  className={`p-2.5 rounded-xl text-right flex flex-col gap-1 transition-all border ${
+                    params.tableMode === 'continue'
+                      ? 'bg-white border-[#2563eb] text-[#0f172a] shadow-xs ring-1 ring-[#2563eb]'
+                      : 'bg-[#f1f5f9] border-[#e2e8f0] text-[#64748b] hover:bg-white'
+                  }`}
+                >
+                  <span className="text-xs font-bold text-[#0f172a]">
+                    {t.tableModeContinue}
+                  </span>
+                  <span className="text-[10px] text-[#64748b] leading-tight">
+                    {t.tableModeContinueHelp}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

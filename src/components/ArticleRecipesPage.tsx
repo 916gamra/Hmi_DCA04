@@ -203,7 +203,7 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
                       <span className="text-[#94a3b8]">•</span>
                       <span>{preset.params.layers}L</span>
                       <span className="text-[#94a3b8]">•</span>
-                      <span>ΔD{preset.params.spacing}</span>
+                      <span>s={preset.params.spacing}mm</span>
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">

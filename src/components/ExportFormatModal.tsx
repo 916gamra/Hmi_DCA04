@@ -67,7 +67,7 @@ export const ExportFormatModal: React.FC<ExportFormatModalProps> = ({
       `Tool Diameter: ${fullParams.tool} mm`,
       `Outer Margin: ${fullParams.margin} mm`,
       `Concentric Layers: ${fullParams.layers}`,
-      `Radial Spacing (ΔD): ${fullParams.spacing} mm`,
+      `Radial Spacing (s): ${fullParams.spacing} mm (ΔD = ${fullParams.spacing * 2} mm)`,
       `------------------------------------------`,
       `Total Holes: ${model.totalPts}`,
       `Total Steps per Head: ${model.totalSteps}`,
