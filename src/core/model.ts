@@ -298,6 +298,7 @@ export function buildModel(p: ModelParams): TrayModel {
     totalPts,
     totalDrilled,
     totalSteps,
+    tableMode: p.tableMode || 'reset',
     hasErr: warns.some((w) => w.lv === 'err'),
     hasWarn: warns.some((w) => w.lv === 'warn'),
   };

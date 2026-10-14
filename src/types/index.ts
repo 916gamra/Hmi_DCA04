@@ -96,6 +96,7 @@ export interface TrayModel {
   totalPts: number;
   totalDrilled: number; // عدد الثقوب المحفورة فعلياً بعد تطبيق قناع Repteur
   totalSteps: number;
+  tableMode?: 'reset' | 'continue';
   hasErr: boolean;
   hasWarn: boolean;
 }

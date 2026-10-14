@@ -750,8 +750,8 @@ export function renderCanvas(
       ctx.lineWidth = 1.2;
       ctx.stroke();
 
-      // Plunge spark flash
-      if (firing) {
+      // Plunge spark flash or Repteur bypassed stroke indicator
+      if (firing && firing.fired !== false) {
         const glowGrad = ctx.createRadialGradient(
           toolX,
           toolY,
@@ -767,6 +767,15 @@ export function renderCanvas(
         ctx.arc(toolX, toolY, toolRadius * 3 + 8, 0, Math.PI * 2);
         ctx.fillStyle = glowGrad;
         ctx.fill();
+      } else if (firing && firing.fired === false) {
+        // Repteur intercepted: punch bypassed by relay, no spark flash
+        ctx.beginPath();
+        ctx.arc(toolX, toolY, toolRadius + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.45)' : 'rgba(100, 116, 139, 0.4)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
     }
 

@@ -273,4 +273,100 @@ describe('timeline — integration', () => {
     expect(tl1.total).toBe(tl2.total);
     expect(tl1.acts.length).toBe(tl2.acts.length);
   });
+
+  it('tableMode=continue: inter-layer repos is purely radial (th0 === th1) and preserves angle continuity', () => {
+    const m = buildModel(makeParams({
+      layers: 3,
+      rawBase: 12,
+      addAngle: 10,
+      tableMode: 'continue',
+    }));
+    const tl = buildTimeline(m, makeTiming());
+    const reposActs = tl.acts.filter((a) => a.type === 'repos');
+
+    expect(reposActs).toHaveLength(3);
+    // Layer 0 starts at -off
+    expect(reposActs[0].layer).toBe(0);
+
+    // Layers > 0 have purely radial repos transitions (no turntable rotation)
+    for (let i = 1; i < reposActs.length; i++) {
+      const rAct = reposActs[i];
+      expect(rAct.th0).toBeCloseTo(rAct.th1, 4); // Pure radial motion!
+      expect(rAct.r0).not.toBe(rAct.r1); // Radius changes
+    }
+
+    // Verify index count: exactly (per - 1) per layer without artificial jumps
+    const indexActs = tl.acts.filter((a) => a.type === 'index');
+    expect(indexActs).toHaveLength((4 - 1) * 3); // 3 layers, per=4 each -> 3 * 3 = 9
+  });
+
+  it('tableMode=continue: override parameter takes precedence', () => {
+    const m = buildModel(makeParams({
+      layers: 2,
+      rawBase: 12,
+      addAngle: 15,
+      tableMode: 'reset',
+    }));
+    // Overriding tableMode to continue
+    const tlContinue = buildTimeline(m, makeTiming(), 'continue');
+    const reposActs = tlContinue.acts.filter((a) => a.type === 'repos');
+    expect(reposActs[1].th0).toBeCloseTo(reposActs[1].th1, 4);
+
+    // Overriding tableMode to reset
+    const mCont = buildModel(makeParams({
+      layers: 2,
+      rawBase: 12,
+      addAngle: 15,
+      tableMode: 'continue',
+    }));
+    const tlReset = buildTimeline(mCont, makeTiming(), 'reset');
+    const reposReset = tlReset.acts.filter((a) => a.type === 'repos');
+    expect(reposReset[1].th1).toBeCloseTo(-mCont.layers[1].off, 4);
+  });
+
+  it('tableMode=continue: final stateAt does not snap back to lastLayer.off', () => {
+    const m = buildModel(makeParams({
+      layers: 2,
+      rawBase: 12,
+      addAngle: 15,
+      tableMode: 'continue',
+    }));
+    const tl = buildTimeline(m, makeTiming());
+    const finalState = stateAt(tl.total, tl, m);
+    expect(finalState.done).toBe(true);
+    // The final theta should match the last action's th1, not forced to -lastLayer.off
+    const lastAct = tl.acts[tl.acts.length - 1];
+    expect(finalState.theta).toBeCloseTo(lastAct.th1, 4);
+  });
+
+  it('repteurEnabled: timeline fire actions have fired alternating matching stroke mask', () => {
+    const m = buildModel(makeParams({
+      layers: 1,
+      rawBase: 12, // per = 4
+      repteurEnabled: true,
+      repteurStartPass: true,
+    }));
+    const tl = buildTimeline(m, makeTiming());
+    const fireActs = tl.acts.filter((a) => a.type === 'fire');
+
+    expect(fireActs).toHaveLength(4);
+    expect(fireActs[0].fired).toBe(true);  // step 0 passes
+    expect(fireActs[1].fired).toBe(false); // step 1 intercepted
+    expect(fireActs[2].fired).toBe(true);  // step 2 passes
+    expect(fireActs[3].fired).toBe(false); // step 3 intercepted
+  });
+
+  it('tableMode=reset: inter-layer repos returns table to absolute -L.off', () => {
+    const m = buildModel(makeParams({
+      layers: 3,
+      rawBase: 12,
+      addAngle: 10,
+      tableMode: 'reset',
+    }));
+    const tl = buildTimeline(m, makeTiming());
+    const reposActs = tl.acts.filter((a) => a.type === 'repos');
+
+    expect(reposActs[1].th1).toBeCloseTo(-m.layers[1].off, 4);
+    expect(reposActs[2].th1).toBeCloseTo(-m.layers[2].off, 4);
+  });
 });

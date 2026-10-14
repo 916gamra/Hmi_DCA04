@@ -13,7 +13,29 @@ export function fmtTime(ms: number): string {
   return `${s.toFixed(1)} ث`;
 }
 
-export function buildTimeline(m: TrayModel, tm?: TrayTiming): Timeline {
+/**
+ * TRIVIUM DCA04 Machine Timeline Generator
+ *
+ * Rules for Table Modes (قواعد أوضاع الطاولة):
+ * 1. reset (Default / وضع إعادة الصفر المطلق):
+ *    - Each layer has an absolute angular reference offset: thS = -L.off.
+ *    - On layer repositioning (repos), the turntable rotates directly to thS = -L.off,
+ *      and the radial drill carriage moves to L.r.
+ *
+ * 2. continue (Real DCA04 machine behavior / وضع الاستمرار الزاوي للآلة):
+ *    - Layer 0 sets initial radial position r0 and starting turntable angle thS = -L0.off.
+ *    - Between layer i and layer i+1:
+ *      * Reposition action changes RADIAL coordinate only (r0 -> r1 = L.r).
+ *      * Turntable angle is stationary: th1 = th0 (حركة شعاعية فقط: لا دوران لإعادة الصفر ولا قفزة إلى -L.off).
+ *      * Indexing inside the next layer continues smoothly from the current theta by -L.step.
+ *    - Physical continuity of turntable rotation is strictly preserved.
+ */
+export function buildTimeline(
+  m: TrayModel,
+  tm?: TrayTiming,
+  overrideTableMode?: 'reset' | 'continue'
+): Timeline {
+  const tableMode = overrideTableMode || m.tableMode || 'reset';
   const acts: TimelineAction[] = [];
   let t = 0;
   let th = 0;
@@ -24,21 +46,54 @@ export function buildTimeline(m: TrayModel, tm?: TrayTiming): Timeline {
   const dDwell = tm && typeof tm.dwell === 'number' && tm.dwell > 0 ? tm.dwell : 100;
 
   m.layers.forEach((L, i) => {
-    // 1. Reposition drill heads radially to layer radius and initial angle offset
-    const thS = -L.off;
-    acts.push({
-      type: 'repos',
-      t0: t,
-      d: dLayer,
-      layer: i,
-      r0: rr,
-      r1: L.r,
-      th0: th,
-      th1: thS,
-    });
-    t += dLayer;
-    rr = L.r;
-    th = thS;
+    // 1. Reposition drill heads radially to layer radius
+    if (i === 0) {
+      const thS = -L.off;
+      acts.push({
+        type: 'repos',
+        t0: t,
+        d: dLayer,
+        layer: i,
+        r0: rr,
+        r1: L.r,
+        th0: th,
+        th1: thS,
+      });
+      t += dLayer;
+      rr = L.r;
+      th = thS;
+    } else if (tableMode === 'continue') {
+      // In continue mode (DCA04): purely radial carriage movement between layers (حركة شعاعية فقط)
+      // θ1 = θ0: Turntable angle remains completely stationary during repos (no angular reset, no jump to -L.off)
+      acts.push({
+        type: 'repos',
+        t0: t,
+        d: dLayer,
+        layer: i,
+        r0: rr,
+        r1: L.r,
+        th0: th,
+        th1: th,
+      });
+      t += dLayer;
+      rr = L.r;
+    } else {
+      // Standard reset mode: return table to absolute layer start offset
+      const thS = -L.off;
+      acts.push({
+        type: 'repos',
+        t0: t,
+        d: dLayer,
+        layer: i,
+        r0: rr,
+        r1: L.r,
+        th0: th,
+        th1: thS,
+      });
+      t += dLayer;
+      rr = L.r;
+      th = thS;
+    }
 
     // 2. Drill all points for each head in this layer
     for (let j = 0; j < L.per; j++) {
@@ -102,7 +157,7 @@ export function stateAt(t: number, timeline: Timeline, model: TrayModel): Simula
       if (q === acts.length - 1) {
         done = true;
         cur = a;
-        if (model.layers.length > 0) {
+        if (model.tableMode !== 'continue' && model.layers.length > 0) {
           theta = -model.layers[model.layers.length - 1].off;
         }
       }

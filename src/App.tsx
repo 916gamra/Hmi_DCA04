@@ -125,8 +125,8 @@ export default function App() {
   // 5. Computed Model & Timeline
   const model = useMemo(() => buildModel(params), [params]);
   const timeline = useMemo(
-    () => buildTimeline(model, params.timing),
-    [model, params.timing]
+    () => buildTimeline(model, params.timing, params.tableMode),
+    [model, params.timing, params.tableMode]
   );
 
   const {
