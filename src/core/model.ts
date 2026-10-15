@@ -75,7 +75,7 @@ export function buildModel(p: ModelParams): TrayModel {
   const radialStepMm =
     activeLayersCount > 1 ? (r1 - rLastR) / (activeLayersCount - 1) : 0;
   const rLast = rLastR;
-  const dLast = 2 * rLastRUnclamped;
+  const dLast = 2 * rLastR;
 
   const layers: Layer[] = [];
   const all: Point[] = [];
@@ -244,9 +244,6 @@ export function buildModel(p: ModelParams): TrayModel {
   }
 
   // Geometry and physical limit validations based on diameter and margin
-  // rLast and dLast already defined above from rLastR
-  const dLastVal = 2 * rLastR;
-
   if (d1 <= 0) {
     warns.push({
       lv: 'err',
@@ -266,10 +263,10 @@ export function buildModel(p: ModelParams): TrayModel {
     });
   }
 
-  if (dLast < 0) {
+  if (rLastRUnclamped < 0) {
     warns.push({
       lv: 'err',
-      tx: `قطر الطبقة الأخيرة سالب (${fmt(dLast)} مم) — تتجاوز المركز! قلل التباعد أو عدد الطبقات.`,
+      tx: `قطر الطبقة الأخيرة سالب (${fmt(2 * rLastRUnclamped)} مم) — تتجاوز المركز! قلل التباعد أو عدد الطبقات.`,
     });
   } else if (dLast < p.tool && d1 > 0) {
     warns.push({
@@ -321,7 +318,7 @@ export function buildModel(p: ModelParams): TrayModel {
   };
 }
 
-export function extractMachineRows(model: TrayModel, _p?: TrayParams) {
+export function extractMachineRows(model: TrayModel, p?: Partial<TrayParams> | ModelParams) {
   const rows = [];
   const maxMachineLayers = 7;
 
@@ -334,7 +331,31 @@ export function extractMachineRows(model: TrayModel, _p?: TrayParams) {
 
     if (isLayerActive) {
       rotationAngle = Number(layer.step.toFixed(1));
-      add = Number(layer.off.toFixed(1));
+      if (i === 0) {
+        // الطبقة 0: إزاحة أولية 0 أو off الأولي من custom إن وُجد
+        const initialOff = p?.mode === 'custom' ? (p?.custom?.[0]?.off ?? 0) : 0;
+        add = Number(initialOff.toFixed(1));
+      } else {
+        // الطبقة i > 0: فرق الطور المقصود بين الطبقتين (params.addAngle في mode all أو cfg.off في custom)
+        // ممنوع منعاً باتاً: add = layer.off المتراكم في continue
+        let intendedDiff = 0;
+        if (p) {
+          if (p.mode === 'custom') {
+            intendedDiff = p.custom?.[i]?.off ?? 0;
+          } else {
+            intendedDiff = p.addAngle ?? 0;
+          }
+        } else {
+          // استنتاج فرق الطور المقصود في حال عدم تمرير p
+          if (model.tableMode === 'continue') {
+            const prev = model.layers[i - 1];
+            intendedDiff = layer.off - (prev.off + (prev.per - 1) * prev.step);
+          } else {
+            intendedDiff = layer.off - model.layers[i - 1].off;
+          }
+        }
+        add = Number(intendedDiff.toFixed(1));
+      }
     }
 
     rows.push({
@@ -350,30 +371,34 @@ export function extractMachineRows(model: TrayModel, _p?: TrayParams) {
   return rows;
 }
 
-export function calculateTouchWinProcessingTime(model: TrayModel, p: TrayParams): number {
+export function calculateTouchWinProcessingTime(model: TrayModel, p: Partial<TrayParams> | ModelParams): number {
   if (model.layers.length === 0) return 0;
 
-  const dwellSec = p.timing.dwell / 1000; // e.g. 0.10s
+  const timing = p.timing || { dwell: 100, index: 150, layer: 500 };
+  const dwellSec = (timing.dwell ?? 100) / 1000; // e.g. 0.10s
   const rotHz = p.rotationSpeedHz || 800;
   const expHz = p.expansionSpeedHz || 800;
   const ppr = p.pulsesPerRev || 10000;
   const ppm = p.pulsesPerMm || 100;
 
   // Machine mechanical settling & ramp overheads (configurable or calibrated defaults)
-  const expRamp = p.timing.rampExpansionSec !== undefined ? p.timing.rampExpansionSec : 0.08;
-  const rotRamp = p.timing.rampRotationSec !== undefined ? p.timing.rampRotationSec : 0.035;
+  const expRamp = timing.rampExpansionSec !== undefined ? timing.rampExpansionSec : 0.08;
+  const rotRamp = timing.rampRotationSec !== undefined ? timing.rampRotationSec : 0.035;
+
+  // استخدام model.radialStepMm بدل p.spacing لحساب زمن التمدد الشعاعي (fallback: p.spacing إن radialStepMm=0)
+  const radialStepMm = model.radialStepMm > 0 ? model.radialStepMm : (p.spacing || 0);
 
   let totalSec = 0;
 
   // 1. Initial positioning
-  const firstExpansionSec = (p.spacing * ppm) / expHz + expRamp;
+  const firstExpansionSec = (radialStepMm * ppm) / expHz + expRamp;
   totalSec += Math.min(firstExpansionSec, 0.4);
 
   // 2. Each layer execution
   model.layers.forEach((L, idx) => {
     // Inter-layer expansion
     if (idx > 0) {
-      const expTimeSec = (p.spacing * ppm) / expHz + expRamp;
+      const expTimeSec = (radialStepMm * ppm) / expHz + expRamp;
       totalSec += Math.min(expTimeSec, 0.35);
     }
 

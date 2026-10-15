@@ -152,6 +152,10 @@ export function stateAt(t: number, timeline: Timeline, model: TrayModel): Simula
       theta = a.th1;
       headR = a.r1;
       if (a.type === 'fire' && a.j !== undefined) {
+        // counts[layer] tracks machine indexing stroke progress (j + 1) across the layer.
+        // Physical and visual drilling (isDrilled) is strictly governed by pt.fired !== false
+        // (in render.ts and SimulationControls.tsx). If a.fired === false, Repteur intercepts
+        // the stroke, rendering a dashed ghost stroke and never filling the hole.
         counts[a.layer] = a.j + 1;
       }
       if (q === acts.length - 1) {

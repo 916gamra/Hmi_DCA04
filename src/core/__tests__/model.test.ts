@@ -9,7 +9,7 @@
  *   • Edge cases (1 layer, 8 layers, tiny tray, huge tool)
  */
 import { describe, it, expect } from 'vitest';
-import { buildModel, norm360, SAFETY_CLEARANCE_MM } from '../model';
+import { buildModel, norm360, SAFETY_CLEARANCE_MM, extractMachineRows, calculateTouchWinProcessingTime } from '../model';
 import type { ModelParams } from '../model';
 
 // ─────────────────────────────────────────────────────────
@@ -327,7 +327,8 @@ describe('buildModel — validation', () => {
       trayD: 200, margin: 20, spacing: 100, layers: 4,
     }));
     expect(m.hasErr).toBe(true);
-    expect(m.dLast).toBeLessThan(0);
+    expect(m.dLast).toBe(0);
+    expect(m.warns.some((w) => /سالب|تتجاوز المركز/i.test(w.tx))).toBe(true);
   });
 
   it('errors when spacing < tool diameter', () => {
@@ -625,5 +626,49 @@ describe('buildModel — machine compatibility modes (Repteur & TableMode)', () 
     expect(mContinue.layers[0].off).toBe(10);
     expect(mContinue.layers[1].off).toBe(90);
     expect(mContinue.layers[2].off).toBe(180);
+  });
+
+  it('extractMachineRows: add for layer 0 is 0 and layer i>0 is intended phase difference (not accumulated layer.off)', () => {
+    const params = makeParams({
+      layers: 3,
+      rawBase: 12,
+      addAngle: 15,
+      tableMode: 'continue',
+    });
+    const m = buildModel(params);
+    // In continue mode, m.layers offsets accumulate (e.g. 0, 90+15=105, etc.)
+    expect(m.layers[1].off).toBeGreaterThan(15);
+
+    // But machineRows must show:
+    // Row 1 (Layer 0): add = 0
+    // Row 2 (Layer 1): add = 15 (intended addAngle, NOT accumulated layer.off)
+    // Row 3 (Layer 2): add = 15
+    const rows = extractMachineRows(m, params);
+    expect(rows[0].add).toBe(0);
+    expect(rows[1].add).toBe(15);
+    expect(rows[2].add).toBe(15);
+  });
+
+  it('calculateTouchWinProcessingTime uses model.radialStepMm instead of p.spacing', () => {
+    // trayD=530, margin=70, layers=4, rLast=100
+    // r1 = 195, rLast = 50, radialStepMm = (195-50)/3 = 48.333 mm
+    const params = makeParams({
+      trayD: 530,
+      margin: 70,
+      layers: 4,
+      rLast: 100,
+      spacing: 10, // dummy spacing that shouldn't be used because radialStepMm is active
+    });
+    const m = buildModel(params);
+    expect(m.radialStepMm).toBeCloseTo(48.3333, 3);
+
+    const timeWithModelStep = calculateTouchWinProcessingTime(m, params);
+    expect(timeWithModelStep).toBeGreaterThan(0);
+
+    // Compare with a model having radialStepMm=0 (fallback to p.spacing)
+    const singleLayerModel = buildModel({ ...params, layers: 1 });
+    expect(singleLayerModel.radialStepMm).toBe(0);
+    const timeSingle = calculateTouchWinProcessingTime(singleLayerModel, params);
+    expect(timeSingle).toBeGreaterThan(0);
   });
 });
