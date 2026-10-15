@@ -9,6 +9,7 @@ interface NumberStepperProps {
   unit?: string;
   onChange: (val: number) => void;
   size?: 'normal' | 'small';
+  disabled?: boolean;
 }
 
 export const NumberStepper: React.FC<NumberStepperProps> = ({
@@ -20,6 +21,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
   unit,
   onChange,
   size = 'normal',
+  disabled = false,
 }) => {
   // Keep latest refs to prevent any stale closure issues during continuous holding
   const valueRef = useRef(value);
@@ -78,6 +80,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
   }, [clearTimers]);
 
   const handlePointerDown = (direction: 1 | -1, e: React.PointerEvent) => {
+    if (disabled) return;
     // Only handle primary button / finger touch
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     
@@ -100,6 +103,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
   };
 
   const handlePointerUpOrLeave = (e: React.PointerEvent) => {
+    if (disabled) return;
     e.preventDefault();
     clearTimers();
     isHeldRef.current = false;
@@ -115,7 +119,9 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
   return (
     <div
       dir="ltr"
-      className={`flex items-center bg-[#f1f5f9] border border-[#d8e0ec] rounded-2xl p-1 transition-all select-none touch-none ${
+      className={`flex items-center ${
+        disabled ? 'bg-[#e2e8f0]/60 opacity-60 cursor-not-allowed' : 'bg-[#f1f5f9]'
+      } border border-[#d8e0ec] rounded-2xl p-1 transition-all select-none touch-none ${
         isSmall ? 'h-9' : 'h-11'
       }`}
     >
@@ -126,7 +132,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         onPointerUp={handlePointerUpOrLeave}
         onPointerLeave={handlePointerUpOrLeave}
         onPointerCancel={handlePointerUpOrLeave}
-        disabled={value <= min}
+        disabled={disabled || value <= min}
         aria-label="نقصان"
         className={`${
           isSmall ? 'w-8 h-7 text-base' : 'w-10 h-9 text-lg'
@@ -159,7 +165,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         onPointerUp={handlePointerUpOrLeave}
         onPointerLeave={handlePointerUpOrLeave}
         onPointerCancel={handlePointerUpOrLeave}
-        disabled={value >= max}
+        disabled={disabled || value >= max}
         aria-label="زيادة"
         className={`${
           isSmall ? 'w-8 h-7 text-base' : 'w-10 h-9 text-lg'

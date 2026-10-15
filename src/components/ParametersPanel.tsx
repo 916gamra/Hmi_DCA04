@@ -611,7 +611,9 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
               <h2 className="text-sm font-bold text-[#0f172a] truncate">{t.cardPointsTitle}</h2>
               <span className="text-[11px] font-mono text-[#64748b] truncate mt-0.5">
                 {params.mode === 'all'
-                  ? `${params.rawBase} ${lang === 'ar' ? 'نقطة/طبقة' : 'pts/couche'} (${params.rawBase / 3} × 3) • +${params.addAngle}°`
+                  ? `${params.rawBase} ${lang === 'ar' ? 'نقطة/طبقة' : 'pts/couche'} (${params.rawBase / 3} × 3)${
+                      params.tableMode === 'continue' ? '' : ` • +${params.addAngle}°`
+                    }`
                   : (lang === 'ar' ? 'توزيع مخصص لكل طبقة' : 'Distribution personnalisée')}
               </span>
             </div>
@@ -682,21 +684,36 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                 <div>
                   <div className="flex justify-between items-center text-xs font-semibold text-[#475569] mb-1.5">
                     <label htmlFor="addAngle">{t.offsetAngle}</label>
-                    <span className="text-[11px] text-[#64748b]">{params.addAngle}°</span>
+                    <span className="text-[11px] text-[#64748b]">
+                      {params.tableMode === 'continue'
+                        ? lang === 'ar'
+                          ? '0° (مقفل — استمرار شعاعي)'
+                          : '0° (verrouillé)'
+                        : `${params.addAngle}°`}
+                    </span>
                   </div>
                   <NumberStepper
                     id="addAngle"
-                    value={params.addAngle}
+                    value={params.tableMode === 'continue' ? 0 : params.addAngle}
                     min={-90}
                     max={90}
                     step={0.5}
                     unit="°"
-                    onChange={(val) => onChange({ addAngle: val })}
+                    disabled={params.tableMode === 'continue'}
+                    onChange={(val) => {
+                      if (params.tableMode !== 'continue') {
+                        onChange({ addAngle: val });
+                      }
+                    }}
                   />
                   <p className="text-[11px] text-[#64748b] mt-1">
-                    {lang === 'ar'
-                      ? `الطبقة i تُزاح بمقدار i × ${params.addAngle}° لمنع اصطفاف الثقوب خطياً وتحقيق مظهر دوامي.`
-                      : `La couche i est décalée de i × ${params.addAngle}° pour éviter l'alignement radial et créer un motif régulier.`}
+                    {params.tableMode === 'continue'
+                      ? lang === 'ar'
+                        ? 'في وضع الاستمرار الزاوي (continue)، الإزاحة التدريجية ملغاة؛ تستمر الطاولة شعاعياً من موضع آخر ضربة تلقائياً دون إزاحة إضافية.'
+                        : 'En mode continuité, le décalage progressif est désactivé ; la table reprend radialement du dernier perçage sans décalage additionnel.'
+                      : lang === 'ar'
+                        ? `الطبقة i تُزاح بمقدار i × ${params.addAngle}° لمنع اصطفاف الثقوب خطياً وتحقيق مظهر دوامي.`
+                        : `La couche i est décalée de i × ${params.addAngle}° pour éviter l'alignement radial et créer un motif régulier.`}
                   </p>
                 </div>
               </>
@@ -763,14 +780,24 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                           <div>
                             <span className="text-[10px] text-[#64748b] block mb-1">
                               {t.customModeOffset} (°)
+                              {params.tableMode === 'continue'
+                                ? lang === 'ar'
+                                  ? ' (تلقائي)'
+                                  : ' (auto)'
+                                : ''}
                             </span>
                             <NumberStepper
-                              value={c.off}
+                              value={params.tableMode === 'continue' ? 0 : c.off}
                               min={-90}
                               max={90}
                               step={0.5}
                               size="small"
-                              onChange={(val) => handleCustomLayerOffset(idx, val)}
+                              disabled={params.tableMode === 'continue'}
+                              onChange={(val) => {
+                                if (params.tableMode !== 'continue') {
+                                  handleCustomLayerOffset(idx, val);
+                                }
+                              }}
                             />
                           </div>
                         </div>
@@ -1066,7 +1093,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => onChange({ tableMode: 'continue' })}
+                  onClick={() => onChange({ tableMode: 'continue', addAngle: 0 })}
                   className={`p-2.5 rounded-xl text-right flex flex-col gap-1 transition-all border ${
                     params.tableMode === 'continue'
                       ? 'bg-white border-[#2563eb] text-[#0f172a] shadow-xs ring-1 ring-[#2563eb]'

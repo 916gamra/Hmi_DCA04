@@ -104,7 +104,7 @@ export function buildModel(p: ModelParams): TrayModel {
     // لذلك نُعيد دائماً حساب step = 360 / n بعد sanitizeN لضمان إغلاق الدائرة بدقة.
     if (p.mode === 'all') {
       rawN = p.rawBase;
-      const stepOff = p.addAngle;
+      const stepOff = p.tableMode === 'continue' ? 0 : p.addAngle;
       const nClean = sanitizeN(rawN);
       n = nClean;
       step = 360 / nClean;
@@ -115,8 +115,8 @@ export function buildModel(p: ModelParams): TrayModel {
         } else {
           // Angular phase chaining (DCA04): table stops at the angle of the last stroke of previous layer.
           // The table performed (prevPer - 1) index steps of prevStep each.
-          // Any explicit incremental addAngle is added on top of the continuous angular phase.
-          accumulatedOff += (prevPer - 1) * prevStep + (stepOff || 0);
+          // In continue mode on the physical machine, addAngle is eliminated (phase is strictly governed by stop angle).
+          accumulatedOff += (prevPer - 1) * prevStep;
         }
         off = accumulatedOff;
       } else {
@@ -124,7 +124,7 @@ export function buildModel(p: ModelParams): TrayModel {
       }
     } else {
       // custom or machine mode
-      const cfg = p.custom[i] || { n: p.rawBase, off: i * p.addAngle };
+      const cfg = p.custom[i] || { n: p.rawBase, off: i * (p.tableMode === 'continue' ? 0 : p.addAngle) };
       const layerOff = cfg.off || 0;
 
       if (cfg.stepAngle && cfg.stepAngle > 0) {
@@ -139,9 +139,10 @@ export function buildModel(p: ModelParams): TrayModel {
 
       if (p.tableMode === 'continue') {
         if (i === 0) {
-          accumulatedOff = layerOff;
+          accumulatedOff = 0;
         } else {
-          accumulatedOff += (prevPer - 1) * prevStep + layerOff;
+          // In continue mode, no extra custom delta is added; the table continues radially from the stop angle
+          accumulatedOff += (prevPer - 1) * prevStep;
         }
         off = accumulatedOff;
       } else {
@@ -336,23 +337,20 @@ export function extractMachineRows(model: TrayModel, p?: Partial<TrayParams> | M
         const initialOff = p?.mode === 'custom' ? (p?.custom?.[0]?.off ?? 0) : 0;
         add = Number(initialOff.toFixed(1));
       } else {
-        // الطبقة i > 0: فرق الطور المقصود بين الطبقتين (params.addAngle في mode all أو cfg.off في custom)
-        // ممنوع منعاً باتاً: add = layer.off المتراكم في continue
+        // الطبقة i > 0: في وضع continue لا توجد إزاحة تدريجية بين الطبقات (add = 0)
+        // في وضع reset: فرق الطور المقصود بين الطبقتين (params.addAngle في mode all أو cfg.off في custom)
+        // ممنوع منعاً باتاً: add = layer.off المتراكم
         let intendedDiff = 0;
-        if (p) {
+        if (model.tableMode === 'continue' || p?.tableMode === 'continue') {
+          intendedDiff = 0;
+        } else if (p) {
           if (p.mode === 'custom') {
             intendedDiff = p.custom?.[i]?.off ?? 0;
           } else {
             intendedDiff = p.addAngle ?? 0;
           }
         } else {
-          // استنتاج فرق الطور المقصود في حال عدم تمرير p
-          if (model.tableMode === 'continue') {
-            const prev = model.layers[i - 1];
-            intendedDiff = layer.off - (prev.off + (prev.per - 1) * prev.step);
-          } else {
-            intendedDiff = layer.off - model.layers[i - 1].off;
-          }
+          intendedDiff = layer.off - model.layers[i - 1].off;
         }
         add = Number(intendedDiff.toFixed(1));
       }

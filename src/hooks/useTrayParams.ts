@@ -110,7 +110,13 @@ export function useTrayParams(onParamsChange?: () => void) {
 
   const updateParams = useCallback(
     (updated: Partial<TrayParams>) => {
-      setParams((prev) => ({ ...prev, ...updated }));
+      setParams((prev) => {
+        const next = { ...prev, ...updated };
+        if (updated.tableMode === 'continue') {
+          next.addAngle = 0;
+        }
+        return next;
+      });
       if (onParamsChange) {
         onParamsChange();
       }

@@ -232,7 +232,11 @@ export function normalizeAndHydrateParams(partial: Partial<TrayParams>): TrayPar
   const margin = roundNum(merged.margin, 3);
   const layers = Math.min(7, Math.max(1, Math.round(merged.layers)));
   const rawBase = sanitizeN(merged.rawBase || DEFAULT_PARAMS.rawBase);
-  const addAngle = roundNum(merged.addAngle ?? DEFAULT_PARAMS.addAngle, 4);
+  const tableMode: 'reset' | 'continue' =
+    partial?.tableMode === 'continue' || merged.tableMode === 'continue'
+      ? 'continue'
+      : 'reset';
+  const addAngle = tableMode === 'continue' ? 0 : roundNum(merged.addAngle ?? DEFAULT_PARAMS.addAngle, 4);
 
   const R = trayD / 2;
   const r1 = Math.max(0, R - margin);
@@ -318,7 +322,7 @@ export function normalizeAndHydrateParams(partial: Partial<TrayParams>): TrayPar
       partial.repteurStartPass !== undefined
         ? Boolean(partial.repteurStartPass)
         : (DEFAULT_PARAMS.repteurStartPass ?? true),
-    tableMode: partial.tableMode === 'continue' ? 'continue' : 'reset',
+    tableMode,
   };
 }
 

@@ -595,7 +595,22 @@ describe('buildModel — machine compatibility modes (Repteur & TableMode)', () 
     expect(m.layers[2].off).toBe(180); // 90 + 90 = 180°
   });
 
-  it('tableMode=continue accumulates continuous phase plus custom layer offsets', () => {
+  it('tableMode=continue: strictly chains angular stop phase without addAngle in mode all', () => {
+    // DCA04 Table continuity rule:
+    // Even if addAngle is present in params, in continue mode it is strictly eliminated:
+    const m = buildModel(makeParams({
+      layers: 3,
+      rawBase: 12,
+      addAngle: 15, // must be ignored in continue
+      tableMode: 'continue',
+    }));
+    // rawBase=12 -> step=30°, per=4 -> (per - 1)*step = 90°
+    expect(m.layers[0].off).toBe(0);
+    expect(m.layers[1].off).toBe(90);
+    expect(m.layers[2].off).toBe(180);
+  });
+
+  it('tableMode=continue in custom mode preserves initial layer 0 offset and chains stop phase without extra deltas', () => {
     const mReset = buildModel(makeParams({
       mode: 'custom',
       layers: 3,
@@ -620,33 +635,40 @@ describe('buildModel — machine compatibility modes (Repteur & TableMode)', () 
       ],
       tableMode: 'continue',
     }));
-    // Layer 0: n=6 -> per=2, step=60°. off = 10°
-    // Layer 1: 10° + (2-1)*60° + 20° = 90°
-    // Layer 2: 90° + (2-1)*60° + 30° = 180°
-    expect(mContinue.layers[0].off).toBe(10);
-    expect(mContinue.layers[1].off).toBe(90);
-    expect(mContinue.layers[2].off).toBe(180);
+    // Layer 0: n=6 -> per=2, step=60°. off = 0°
+    // Layer 1: 0° + (2-1)*60° = 60° (no extra cfg.off delta added)
+    // Layer 2: 60° + (2-1)*60° = 120° (no extra cfg.off delta added)
+    expect(mContinue.layers[0].off).toBe(0);
+    expect(mContinue.layers[1].off).toBe(60);
+    expect(mContinue.layers[2].off).toBe(120);
   });
 
-  it('extractMachineRows: add for layer 0 is 0 and layer i>0 is intended phase difference (not accumulated layer.off)', () => {
-    const params = makeParams({
+  it('extractMachineRows: in continue mode add is 0 for all layers; in reset mode add is intended shift', () => {
+    // 1. Continue mode: DCA04 has no added progressive shift on the machine table
+    const paramsCont = makeParams({
       layers: 3,
       rawBase: 12,
       addAngle: 15,
       tableMode: 'continue',
     });
-    const m = buildModel(params);
-    // In continue mode, m.layers offsets accumulate (e.g. 0, 90+15=105, etc.)
-    expect(m.layers[1].off).toBeGreaterThan(15);
+    const mCont = buildModel(paramsCont);
+    const rowsCont = extractMachineRows(mCont, paramsCont);
+    expect(rowsCont[0].add).toBe(0);
+    expect(rowsCont[1].add).toBe(0);
+    expect(rowsCont[2].add).toBe(0);
 
-    // But machineRows must show:
-    // Row 1 (Layer 0): add = 0
-    // Row 2 (Layer 1): add = 15 (intended addAngle, NOT accumulated layer.off)
-    // Row 3 (Layer 2): add = 15
-    const rows = extractMachineRows(m, params);
-    expect(rows[0].add).toBe(0);
-    expect(rows[1].add).toBe(15);
-    expect(rows[2].add).toBe(15);
+    // 2. Reset mode: add = intended addAngle (e.g. 15), NOT accumulated layer.off
+    const paramsReset = makeParams({
+      layers: 3,
+      rawBase: 12,
+      addAngle: 15,
+      tableMode: 'reset',
+    });
+    const mReset = buildModel(paramsReset);
+    const rowsReset = extractMachineRows(mReset, paramsReset);
+    expect(rowsReset[0].add).toBe(0);
+    expect(rowsReset[1].add).toBe(15);
+    expect(rowsReset[2].add).toBe(15);
   });
 
   it('calculateTouchWinProcessingTime uses model.radialStepMm instead of p.spacing', () => {
