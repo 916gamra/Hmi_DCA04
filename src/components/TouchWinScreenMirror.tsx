@@ -171,9 +171,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
             <div className="flex items-center gap-2">
               <h2 className="text-xs sm:text-base font-bold tracking-tight text-[#0f172a] flex items-center gap-1.5 truncate">
                 <span>
-                  {lang === 'ar'
-                    ? 'شاشات ووصفات الآلة TouchWin OP320'
-                    : 'TouchWin OP320 Écrans & Recettes'}
+                  {t.touchWinHeaderTitle}
                 </span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#2563eb] border border-blue-200 shrink-0">
                   7 Screens
@@ -181,9 +179,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
               </h2>
             </div>
             <p className="text-[10px] sm:text-xs text-[#64748b] truncate">
-              {lang === 'ar'
-                ? 'شاشات LCD الخضراء الحقيقية وبطاقة وصفة الآلة الجاهزة للإدخال'
-                : 'Écrans LCD verts et fiche de paramétrage prête pour saisie'}
+              {t.touchWinSubtitle}
             </p>
           </div>
         </div>
@@ -193,18 +189,10 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
             type="button"
             onClick={onApplyPreset}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[11px] sm:text-xs font-bold text-[#2563eb] transition-all cursor-pointer select-none active:scale-95 shadow-2xs"
-            title={
-              lang === 'ar'
-                ? 'تطبيق وصفة شاشات الآلة الحقيقية: 12° / 15° / 20° / 12° بتباعد 39 مم'
-                : 'Appliquer la recette machine réelle : 12° / 15° / 20° / 12°, 39 mm'
-            }
+            title={t.touchWinApplyTooltip}
           >
             <Sliders className="w-3.5 h-3.5 text-[#2563eb]" />
-            <span>
-              {lang === 'ar'
-                ? 'تطبيق وصفة الآلة (4L - 39mm)'
-                : 'Appliquer recette (4L - 39mm)'}
-            </span>
+            <span>{t.touchWinApplyBtn}</span>
           </button>
         </div>
       </div>
@@ -221,7 +209,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
           }`}
         >
           <Layers className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate text-[11px] sm:text-xs">{lang === 'ar' ? 'بطاقة الوصفة' : 'Fiche Recette'}</span>
+          <span className="truncate text-[11px] sm:text-xs">{t.tabRecipeCard}</span>
         </button>
 
         <button
@@ -234,7 +222,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
           }`}
         >
           <Monitor className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate text-[11px] sm:text-xs">{lang === 'ar' ? 'شاشة LCD' : 'Écran LCD'}</span>
+          <span className="truncate text-[11px] sm:text-xs">{t.tabLcdSingle}</span>
         </button>
 
         <button
@@ -247,7 +235,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
           }`}
         >
           <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate text-[11px] sm:text-xs">{lang === 'ar' ? 'معرض الـ 7' : '7 Écrans'}</span>
+          <span className="truncate text-[11px] sm:text-xs">{t.tabLcdAll}</span>
         </button>
       </div>
 
@@ -263,9 +251,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
               <div className="border-b border-[#334155] pb-3 mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-base sm:text-lg font-bold text-[#38bdf8]">
-                    {lang === 'ar'
-                      ? 'وصفة الآلة — جاهزة للإدخال'
-                      : 'Fiche Recette Machine — Prête à saisir'}
+                    {t.machineRecipeTitle}
                   </span>
                 </div>
                 <span className="text-[11px] text-[#94a3b8] px-2.5 py-1 rounded-full bg-[#1e293b] border border-[#334155]">
@@ -356,9 +342,9 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
 
               {/* Extra summary footer */}
               <div className="mt-4 pt-3 border-t border-[#334155]/70 flex flex-wrap justify-between items-center text-[11px] text-[#94a3b8]">
-                <span>{lang === 'ar' ? `قطر الصينية: ${params.trayD} مم` : `Diamètre plateau: ${params.trayD} mm`}</span>
-                <span>{lang === 'ar' ? `إجمالي الثقوب: ${model.totalPts} ثقب` : `Total trous: ${model.totalPts}`}</span>
-                <span>{lang === 'ar' ? `قطر الأداة: Ø ${params.tool} مم` : `Diamètre outil: Ø ${params.tool} mm`}</span>
+                <span>{t.trayDiameterLabel} {params.trayD} mm</span>
+                <span>{t.totalHolesLabel} {model.totalPts} {t.holesUnit}</span>
+                <span>{t.toolDiameterLabel} Ø {params.tool} mm</span>
               </div>
             </div>
 
@@ -392,7 +378,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
                 className="w-full flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-4 rounded-2xl bg-[#f1f5f9] hover:bg-[#e2e8f0] text-[#0f172a] border border-[#cbd5e1] font-bold text-[11px] sm:text-xs shadow-xs transition-all cursor-pointer active:scale-95"
               >
                 <QrCode className="w-3.5 h-3.5 text-[#475569] shrink-0" />
-                <span className="text-[#0f172a] truncate">{lang === 'ar' ? 'رمز QR' : 'Code QR'}</span>
+                <span className="text-[#0f172a] truncate">{t.qrCodeLabel}</span>
               </button>
 
               <button
@@ -506,7 +492,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
                 className="flex items-center gap-1 p-2 rounded-xl bg-[#f1f5f9] hover:bg-[#e2e8f0] cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span>{lang === 'ar' ? 'الشاشة السابقة' : 'Écran précédent'}</span>
+                <span>{t.btnPrevScreen}</span>
               </button>
 
               <span className="font-mono font-bold text-[#0f172a]">
@@ -520,7 +506,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
                 }
                 className="flex items-center gap-1 p-2 rounded-xl bg-[#f1f5f9] hover:bg-[#e2e8f0] cursor-pointer"
               >
-                <span>{lang === 'ar' ? 'الشاشة التالية' : 'Écran suivant'}</span>
+                <span>{t.btnNextScreen}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

@@ -54,18 +54,16 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
               {t.kpisTitle}
             </h2>
             <p className="text-[9px] sm:text-[10px] text-[#64748b] leading-tight truncate">
-              {lang === 'ar'
-                ? 'فحص التداخلات، التزامن، ومعدل الإنتاجية'
-                : 'Validation géométrique, collisions et cadences'}
+              {t.validationSubtitle}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[#0f172a] text-[10px] sm:text-[11px] font-mono tabular-nums font-bold border border-slate-200">
-            {model.totalPts} {lang === 'ar' ? 'ثقب' : 'pts'}
+            {model.totalPts} {t.holesUnit}
           </span>
           <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] sm:text-[11px] font-mono tabular-nums font-bold border border-blue-200">
-            {model.layers.length} {lang === 'ar' ? 'طبقات' : 'L'}
+            {model.layers.length} {t.layersUnit}
           </span>
         </div>
       </div>
@@ -119,7 +117,7 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
           <div className="flex items-center justify-between text-[#64748b] text-[9px] sm:text-[10px] font-semibold mb-0.5">
             <span className="truncate overflow-hidden text-ellipsis">
               {params.repteurEnabled
-                ? (lang === 'ar' ? 'الثقوب الفعلية (Repteur)' : 'Trous réels (Répteur)')
+                ? t.holesActualRepteur
                 : t.totalHoles}
             </span>
             <Target className="w-3 h-3 text-blue-500 shrink-0 ml-1" />
@@ -139,8 +137,8 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
             </div>
             <div className="text-[8.5px] sm:text-[9px] text-[#64748b] font-mono tabular-nums truncate">
               {params.repteurEnabled
-                ? (lang === 'ar' ? `${(model.totalDrilled / 3).toFixed(1)} حفر/رأس` : `${(model.totalDrilled / 3).toFixed(1)} trous/tête`)
-                : `${(model.totalPts / 3).toFixed(1)} / ${lang === 'ar' ? 'رأس' : 'tête'}`}
+                ? `${(model.totalDrilled / 3).toFixed(1)} ${t.holesPerHeadUnit}`
+                : `${(model.totalPts / 3).toFixed(1)} / ${t.holesPerHeadUnit}`}
             </div>
           </div>
         </div>
@@ -153,10 +151,10 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
           </div>
           <div className="min-w-0">
             <div className="text-xs sm:text-sm font-mono tabular-nums font-bold text-[#0f172a] leading-tight truncate">
-              {model.totalSteps} <span className="text-[9px] sm:text-[10px] font-normal text-slate-500 font-sans">{lang === 'ar' ? 'خطوة' : 'p'}</span>
+              {model.totalSteps} <span className="text-[9px] sm:text-[10px] font-normal text-slate-500 font-sans">{t.stepsUnit}</span>
             </div>
             <div className="text-[8.5px] sm:text-[9px] text-[#64748b] font-mono tabular-nums truncate">
-              {model.layers.length} {lang === 'ar' ? 'مراحل' : 'st'}
+              {model.layers.length} {t.stagesUnit}
             </div>
           </div>
         </div>
@@ -232,9 +230,7 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-50/80 border border-emerald-200 text-emerald-800 text-[10px] sm:text-[11px] font-semibold">
             <CheckCircle2 className="w-3.5 h-3.5 text-[#059669] shrink-0" />
             <span className="truncate overflow-hidden text-ellipsis">
-              {lang === 'ar'
-                ? 'الحسابات الهندسية ممتازة: أبعاد الصينية آمنة، لا يوجد تداخل بين الثقوب، والتزامن مثالي.'
-                : 'Calculs géométriques conformes : aucune collision, entraxes validés.'}
+              {t.validationAllGood}
             </span>
           </div>
         )}
@@ -248,7 +244,7 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
             {t.layersBreakdown}
           </h3>
           <span className="text-[10px] font-mono tabular-nums text-[#64748b] bg-slate-100 px-1.5 py-0.5 rounded">
-            {model.layers.length} {lang === 'ar' ? 'طبقات' : 'couches'}
+            {model.layers.length} {t.layersUnit}
           </span>
         </div>
 
@@ -416,7 +412,7 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
                       <div className="overflow-hidden text-ellipsis whitespace-nowrap font-bold text-slate-700">
                         {cadencePtsPerMin}
                         <span className="text-[9px] font-normal text-slate-400 ml-0.5 font-sans">
-                          {lang === 'ar' ? 'ث/د' : 'p/m'}
+                          {t.ptsPerMinUnit}
                         </span>
                       </div>
                     </td>
@@ -526,7 +522,7 @@ export const ValidationCard: React.FC<ValidationCardProps> = ({
                   <div className="min-w-0">
                     <span className="text-[#64748b] block truncate">{t.tableSpeed}</span>
                     <strong className="font-mono tabular-nums text-[#0f172a] block truncate">
-                      {cadencePtsPerMin} {lang === 'ar' ? 'ث/د' : 'p/m'}
+                      {cadencePtsPerMin} {t.ptsPerMinUnit}
                     </strong>
                   </div>
                   <div className="min-w-0">

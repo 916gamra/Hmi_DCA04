@@ -123,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenQrScanner}
             className="p-2 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] rounded-xl transition-all cursor-pointer"
-            title={lang === 'ar' ? 'مسح واستقبال كود QR للوصفة' : 'Scanner QR pour recevoir recette'}
+            title={t.headerScanQrTitle}
             aria-label="QR Code Scanner"
           >
             <QrCode className="w-4 h-4" />
@@ -134,10 +134,10 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onToggleLang}
             className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-[#1e293b] bg-[#eef2f8] hover:bg-[#dbeafe] border border-[#cbd5e1] rounded-xl transition-all cursor-pointer active:scale-95 shadow-2xs"
-            title={lang === 'ar' ? 'Passer en Français' : 'التحويل إلى العربية'}
+            title={t.headerSwitchLangTitle}
           >
             <Languages className="w-3.5 h-3.5 text-[#2563eb]" />
-            <span className="font-mono">{lang === 'ar' ? 'FR' : 'AR'}</span>
+            <span className="font-mono">{t.switchLangBadge}</span>
           </button>
 
           {/* Technical Description Info Button (Gray, next to Reset) */}
@@ -145,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenTechModal}
             className="p-2 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] rounded-xl transition-all cursor-pointer shrink-0"
-            title={lang === 'ar' ? 'الوصف التقني وفلسفة TRIVIUM' : 'Description technique et philosophie TRIVIUM'}
+            title={t.headerTechModalTitle}
             aria-label="TRIVIUM Machine Technical Description"
           >
             <Info className="w-4 h-4" />

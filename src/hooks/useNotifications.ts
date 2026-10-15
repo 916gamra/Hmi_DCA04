@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { safeStorage } from '../core/safeStorage';
+import { translations, Language } from '../core/i18n';
 
 const NOTIF_PREF_KEY = 'hmi-tray-local-notifications-enabled';
 
@@ -16,14 +18,10 @@ export function useNotifications() {
 
   const [enabled, setEnabled] = useState<boolean>(() => {
     if (!isSupported) return false;
-    try {
-      return (
-        Notification.permission === 'granted' &&
-        localStorage.getItem(NOTIF_PREF_KEY) !== 'false'
-      );
-    } catch {
-      return Notification.permission === 'granted';
-    }
+    return (
+      Notification.permission === 'granted' &&
+      safeStorage.getItem(NOTIF_PREF_KEY) !== 'false'
+    );
   });
 
   useEffect(() => {
@@ -66,23 +64,17 @@ export function useNotifications() {
   );
 
   const requestNotificationPermission = useCallback(
-    async (lang: 'ar' | 'fr'): Promise<'enabled' | 'disabled' | 'denied' | 'unsupported'> => {
+    async (lang: Language): Promise<'enabled' | 'disabled' | 'denied' | 'unsupported'> => {
       if (!isSupported) return 'unsupported';
 
       if (Notification.permission === 'granted') {
         const nextState = !enabled;
         setEnabled(nextState);
-        try {
-          localStorage.setItem(NOTIF_PREF_KEY, String(nextState));
-        } catch {
-          // ignore storage errors
-        }
+        safeStorage.setItem(NOTIF_PREF_KEY, String(nextState));
         if (nextState) {
           showLocalNotification(
             'TRIVIUM120° — تريفيوم',
-            lang === 'ar'
-              ? 'تم تفعيل الإشعارات المحلية بنجاح بدون سيرفر!'
-              : 'Notifications locales activées avec succès (sans serveur) !',
+            translations[lang].notifLocalActivatedBody,
             'trivium-permission'
           );
           return 'enabled';
@@ -95,16 +87,10 @@ export function useNotifications() {
         setPermission(result);
         if (result === 'granted') {
           setEnabled(true);
-          try {
-            localStorage.setItem(NOTIF_PREF_KEY, 'true');
-          } catch {
-            // ignore storage errors
-          }
+          safeStorage.setItem(NOTIF_PREF_KEY, 'true');
           showLocalNotification(
             'TRIVIUM120° — تريفيوم',
-            lang === 'ar'
-              ? 'تم تفعيل الإشعارات المحلية بنجاح بدون سيرفر!'
-              : 'Notifications locales activées avec succès (sans serveur) !',
+            translations[lang].notifLocalActivatedBody,
             'trivium-permission'
           );
           return 'enabled';

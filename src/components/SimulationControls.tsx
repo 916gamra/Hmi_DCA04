@@ -63,13 +63,13 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
     } else {
       switch (state.cur.type) {
         case 'repos':
-          phaseText = lang === 'ar' ? 'انتقال شعاعي إلى الطبقة' : 'Déplacement radial';
+          phaseText = t.phaseRadialMove;
           break;
         case 'index':
-          phaseText = lang === 'ar' ? 'تدوير الصينية بالخطوة الزاوية' : 'Rotation angulaire pas-à-pas';
+          phaseText = t.phaseAngularStep;
           break;
         case 'fire':
-          phaseText = lang === 'ar' ? 'حفر متزامن بالرؤوس الثلاثة (0° / 120° / 240°)' : 'Perçage 3 têtes synchronisées (0° / 120° / 240°)';
+          phaseText = t.phaseDrillingTrio;
           break;
       }
     }
@@ -151,8 +151,8 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
             type="button"
             onClick={onOpenSaveModal}
             className="p-2 rounded-2xl text-[#2563eb] bg-blue-50 hover:bg-blue-100 border border-blue-200/80 transition-all cursor-pointer select-none active:scale-95 shadow-2xs"
-            title={lang === 'ar' ? 'حفظ كـ Article / وصفة' : 'Enregistrer Article / Recette'}
-            aria-label={lang === 'ar' ? 'حفظ كـ Article / وصفة' : 'Enregistrer Article'}
+            title={t.btnSaveArticle}
+            aria-label={t.btnSaveArticle}
           >
             <BookmarkPlus className="w-4 h-4" />
           </button>
@@ -162,7 +162,7 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
             type="button"
             onClick={onOpenQr}
             className="p-2 rounded-2xl text-[#0f172a] bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1]/60 transition-all cursor-pointer select-none active:scale-95 shadow-2xs"
-            title={lang === 'ar' ? 'توليد رمز الاستجابة السريعة (QR Code)' : 'Générer QR Code'}
+            title={t.btnGenerateQr}
             aria-label="QR Code"
           >
             <QrCode className="w-4 h-4" />
@@ -213,25 +213,25 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f1f5f9] text-xs text-left">
         <div className="flex items-center gap-1.5 text-[#475569]">
           <Activity className="w-3.5 h-3.5 text-[#2563eb]" />
-          <span className="font-semibold">{lang === 'ar' ? 'الطور:' : 'Phase :'}</span>
+          <span className="font-semibold">{t.phaseLabel}</span>
           <span className="font-bold text-[#0f172a]">{phaseText}</span>
         </div>
 
         <div className="flex items-center gap-3 text-[#64748b] text-[11px] font-mono">
           <div>
-            <span>{lang === 'ar' ? 'الطبقة: ' : 'Couche : '}</span>
+            <span>{t.layerLabel}</span>
             <strong className="text-[#0f172a]">
               L{activeLayerIndex + 1}/{model.layers.length}
             </strong>
           </div>
           <div>
-            <span>{lang === 'ar' ? 'الخطوة: ' : 'Pas : '}</span>
+            <span>{t.stepLabel}</span>
             <strong className="text-[#0f172a]">
               {activeStepIndex}/{maxStepForLayer}
             </strong>
           </div>
           <div>
-            <span>{lang === 'ar' ? 'الثقوب: ' : 'Trous : '}</span>
+            <span>{t.holesLabel}</span>
             <strong className="text-[#059669]">
               {completedHoles}/{model.totalDrilled !== undefined ? model.totalDrilled : model.totalPts}
             </strong>

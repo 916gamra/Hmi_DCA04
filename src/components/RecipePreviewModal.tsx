@@ -17,6 +17,7 @@ import { TrayParams, ViewOptions } from '../types';
 import { buildModel } from '../core/model';
 import { CanvasStage } from './CanvasStage';
 import { Translations, Language } from '../core/i18n';
+import { safeStorage } from '../core/safeStorage';
 
 interface RecipePreviewModalProps {
   isOpen: boolean;
@@ -41,13 +42,9 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
 }) => {
   const [viewOptions, setViewOptions] = useState<ViewOptions>(() => {
     let savedTheme: 'light' | 'dark' = 'dark';
-    try {
-      const stored = localStorage.getItem('hmi-tray-canvas-theme');
-      if (stored === 'light' || stored === 'dark') {
-        savedTheme = stored;
-      }
-    } catch {
-      // ignore storage errors
+    const stored = safeStorage.getItem('hmi-tray-canvas-theme');
+    if (stored === 'light' || stored === 'dark') {
+      savedTheme = stored;
     }
     return {
       sectors: true,
@@ -78,7 +75,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-base font-bold text-[#0f172a]">
-                  {lang === 'ar' ? 'معاينة القالب المستورد' : 'Aperçu du modèle importé'}
+                  {t.previewModelTitle}
                 </h3>
                 {sourceName && (
                   <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
@@ -87,9 +84,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-[#64748b]">
-                {lang === 'ar'
-                  ? 'تحقق من الأبعاد الهندسية ونقاط الحفر قبل الحفظ أو التطبيق'
-                  : 'Vérifiez la géométrie avant d\'enregistrer ou d\'appliquer'}
+                {t.previewModelSubtitle}
               </p>
             </div>
           </div>
@@ -121,7 +116,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
             {/* View Controls Strip */}
             <div className="flex flex-wrap items-center justify-between gap-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-2.5 text-xs">
               <span className="text-[11px] font-bold text-[#475569] px-1">
-                {lang === 'ar' ? 'خيارات العرض:' : 'Options d\'affichage:'}
+                {t.viewOptionsLabel}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 <button
@@ -136,7 +131,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                   }`}
                 >
                   <Disc className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? 'الحلقات' : 'Anneaux'}</span>
+                  <span>{t.viewRings}</span>
                 </button>
 
                 <button
@@ -151,7 +146,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                   }`}
                 >
                   <Compass className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? 'القطاعات 120°' : 'Secteurs'}</span>
+                  <span>{t.viewSectors}</span>
                 </button>
 
                 <button
@@ -166,7 +161,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                   }`}
                 >
                   <Cpu className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? 'الرؤوس الثلاثة' : '3 Têtes'}</span>
+                  <span>{t.viewHeads}</span>
                 </button>
 
                 <button
@@ -181,7 +176,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                   }`}
                 >
                   <CircleDot className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? 'التسميات' : 'Labels'}</span>
+                  <span>{t.viewLabels}</span>
                 </button>
               </div>
             </div>
@@ -215,11 +210,9 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                     : t.statusSafe}
                 </span>
                 <span className="text-[10px] text-slate-600 block">
-                  {lang === 'ar'
-                    ? previewModel.hasErr
-                      ? 'يوجد تداخل بين الثقوب أو مع محيط الصينية'
-                      : 'التصميم متوافق هندسياً مع آلة DCA'
-                    : 'Statut géométrique validé'}
+                  {previewModel.hasErr
+                    ? t.previewStatusErr
+                    : t.previewStatusSafe}
                 </span>
               </div>
             </div>
@@ -228,7 +221,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 flex flex-col gap-3">
               <h4 className="text-xs font-bold text-[#0f172a] flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-[#2563eb]" />
-                <span>{lang === 'ar' ? 'معاملات الصينية المستوردة' : 'Paramètres géométriques'}</span>
+                <span>{t.previewParamsTitle}</span>
               </h4>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -242,7 +235,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                 <div className="bg-white p-2.5 rounded-xl border border-slate-200/80">
                   <span className="block text-[10px] text-slate-500">{t.layersCount}</span>
                   <span className="font-mono font-bold text-[#2563eb] text-sm">
-                    {previewModel.layers.length} {lang === 'ar' ? 'طبقات' : 'L'}
+                    {previewModel.layers.length} {t.layersUnit}
                   </span>
                 </div>
 
@@ -284,7 +277,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                 className="w-full py-2.5 px-3 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2 active:scale-98"
               >
                 <Bookmark className="w-4 h-4" />
-                <span>{lang === 'ar' ? 'حفظ في القوالب والمقالات' : 'Enregistrer dans les articles'}</span>
+                <span>{t.btnSaveToPresets}</span>
               </button>
 
               {/* 2. Direct Apply to Simulator */}
@@ -294,7 +287,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                 className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2 active:scale-98"
               >
                 <Zap className="w-4 h-4" />
-                <span>{lang === 'ar' ? 'تطبيق وتشغيل في المحاكي' : 'Appliquer et simuler'}</span>
+                <span>{t.btnApplyAndSimulate}</span>
               </button>
 
               {/* 3. Close / Cancel */}
@@ -303,7 +296,7 @@ export const RecipePreviewModal: React.FC<RecipePreviewModalProps> = ({
                 onClick={onClose}
                 className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all border border-slate-200 cursor-pointer active:scale-98"
               >
-                {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+                {t.btnCancel}
               </button>
             </div>
           </div>

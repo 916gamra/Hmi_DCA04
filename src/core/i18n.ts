@@ -70,6 +70,8 @@ export interface Translations {
 
   // Validation
   kpisTitle: string;
+  validationSubtitle: string;
+  validationAllGood: string;
   totalHoles: string;
   d1Label: string;
   dLastLabel: string;
@@ -140,6 +142,205 @@ export interface Translations {
   // Auto Page
   autoTitle: string;
   autoSubtitle: string;
+
+  // Toast & Notifications
+  notifEnabledToast: string;
+  notifDisabledToast: string;
+  notifDeniedToast: string;
+  notifUnsupportedToast: string;
+  notifLocalActivatedBody: string;
+  recipeAppliedPrefix: string;
+  factoryDefaultsRestored: string;
+  fixErrorsBeforeStart: string;
+  recipeSavedToast: string;
+  importedModelAppliedToast: string;
+  singleLayerNoSpacing: string;
+  spacingAutoCalculated: string;
+  customRecipeTag: string;
+
+  // Drawer & Workspace Layout
+  closeDrawer: string;
+  trayParamsTitle: string;
+  swipeToAdjust: string;
+  showResults: string;
+  btnAdjustShort: string;
+  btnResultsShort: string;
+  viewResultsSim: string;
+  adjustTrayParams: string;
+
+  // Canvas Stage & Interactive Tools
+  zoomIn: string;
+  zoomOut: string;
+  zoomFit: string;
+  canvas2dPreview: string;
+  docMathTooltip: string;
+  docMathAria: string;
+  hoverHead: string;
+  hoverAngle: string;
+  hoverCoords: string;
+  drilledStatus: string;
+  pendingDrillStatus: string;
+  forbiddenCollision: string;
+
+  // Simulation Controls Telemetry
+  phaseRadialMove: string;
+  phaseAngularStep: string;
+  phaseDrillingTrio: string;
+  btnSaveArticle: string;
+  btnGenerateQr: string;
+  phaseLabel: string;
+  layerLabel: string;
+  stepLabel: string;
+  holesLabel: string;
+
+  // Save Article Modal
+  saveArticleTitle: string;
+  saveArticleSubtitle: string;
+  articleTitleLabel: string;
+  articleTitlePlaceholder: string;
+  articleDescLabel: string;
+  articleDescPlaceholder: string;
+  btnCancel: string;
+  btnSaveToArticle: string;
+
+  // Recipe Preview Modal
+  previewModelTitle: string;
+  previewModelSubtitle: string;
+  viewOptionsLabel: string;
+  previewStatusSafe: string;
+  previewStatusErr: string;
+  previewParamsTitle: string;
+  layersUnit: string;
+  btnSaveToPresets: string;
+  btnApplyAndSimulate: string;
+
+  // TouchWin & LCD Screens
+  touchWinHeaderTitle: string;
+  touchWinSubtitle: string;
+  touchWinApplyTooltip: string;
+  touchWinApplyBtn: string;
+  tabRecipeCard: string;
+  tabLcdSingle: string;
+  tabLcdAll: string;
+  machineRecipeTitle: string;
+  trayDiameterLabel: string;
+  totalHolesLabel: string;
+  toolDiameterLabel: string;
+  holesUnit: string;
+  qrCodeLabel: string;
+  btnPrevScreen: string;
+  btnNextScreen: string;
+
+  // Import Modal
+  importModalTitle: string;
+  importModalSubtitle: string;
+  importJsonTitle: string;
+  importJsonSubtitle: string;
+  importCsvTitle: string;
+  importCsvSubtitle: string;
+  importGcodeTitle: string;
+  importGcodeSubtitle: string;
+  importQrTitle: string;
+  importQrSubtitle: string;
+  importCsvError: string;
+  importGcodeErrorPrefix: string;
+
+  // Export Modal & Presets
+  exportModalTitle: string;
+  exportJsonTitle: string;
+  exportJsonDesc: string;
+  exportCsvTitle: string;
+  exportCsvDesc: string;
+  exportQrTitle: string;
+  exportQrDesc: string;
+  exportTxtTitle: string;
+  exportTxtDesc: string;
+  exportTriviumTitle: string;
+  exportTriviumDesc: string;
+  confirmDeleteTitle: string;
+  importModelAria: string;
+  availablePresetsCount: string;
+  activeBadge: string;
+  applyBtn: string;
+  confirmDeleteBtn: string;
+
+  // QR Scanner Modal
+  qrScannerTitle: string;
+  qrScannerSubtitle: string;
+  qrScannerGuide: string;
+  qrScannerStopCamera: string;
+  qrScannerDirectCamera: string;
+  qrScannerDirectDesc: string;
+  qrScannerUploadImage: string;
+  qrScannerUploadDesc: string;
+  qrScannerProcessingError: string;
+  qrScannerNotFound: string;
+
+  // PWA Install Guide
+  pwaInstalledBadge: string;
+  pwaGuideTitle: string;
+  pwaGuideSubtitle: string;
+  pwaSafariStep1: string;
+  pwaSafariStep1Desc: string;
+  pwaSafariStep2: string;
+  pwaSafariStep2Desc: string;
+  pwaChromeStep1: string;
+  pwaChromeStep1Desc: string;
+  pwaChromeStep2: string;
+  pwaChromeStep2Desc: string;
+  pwaCloseGuide: string;
+
+  // Parameters Panel & Results Details
+  autoCalculateSpacingBtn: string;
+  autoSpacingTooltip: string;
+  equalSpacingDesc: string;
+  spacingCollisionDanger: string;
+  customDistributionLabel: string;
+  pointsPerLayerUnit: string;
+  radialSettleLabel: string;
+  rotationSettleLabel: string;
+  modeStandardLabel: string;
+  modeRepteurActiveLabel: string;
+  modeContinueLabel: string;
+  modeAbsoluteLabel: string;
+  mmUnit: string;
+  cmUnit: string;
+  toolWord: string;
+  marginWord: string;
+  ofSeven: string;
+  spacingAutoCalculatedHint: string;
+  offsetLockedContinue: string;
+  offsetContinueDesc: string;
+  offsetAutoLabel: string;
+  stepRotServoPerHead: string;
+  offsetAddDesc: string;
+  ptsPerMinUnit: string;
+  stepsUnit: string;
+  stagesUnit: string;
+  holesActualRepteur: string;
+  holesPerHeadUnit: string;
+
+  // Header Actions
+  headerScanQrTitle: string;
+  headerSwitchLangTitle: string;
+  headerTechModalTitle: string;
+  switchLangBadge: string;
+
+  // PWA Status
+  pwaStatusIos: string;
+  pwaStatusUnsupported: string;
+  pwaStatusManual: string;
+  pwaInstallDirectTitle: string;
+  pwaInstallGuideTitle: string;
+  pwaInstallDirectBtn: string;
+  pwaInstallGuideBtn: string;
+
+  // Sources & Modals
+  sourceQrCode: string;
+  sourceImportedRecipe: string;
+  deleteConfirmDesc: string;
+  exportJsonTooltip: string;
+  deletePresetTooltip: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -211,6 +412,8 @@ export const translations: Record<Language, Translations> = {
     themeLight: 'فاتح',
 
     kpisTitle: 'نتائج الفحص الهندسي ومؤشرات الأداء (KPIs)',
+    validationSubtitle: 'فحص التداخلات، التزامن، ومعدل الإنتاجية',
+    validationAllGood: 'الحسابات الهندسية ممتازة: أبعاد الصينية آمنة، لا يوجد تداخل بين الثقوب، والتزامن مثالي.',
     totalHoles: 'إجمالي الثقوب',
     d1Label: 'قطر أول حلقة (D₁)',
     dLastLabel: 'قطر آخر حلقة (D_آخر)',
@@ -274,6 +477,200 @@ export const translations: Record<Language, Translations> = {
     tableModeContinueHelp: 'تراكم إزاحات الزوايا واستمرار الطاولة من زاوية التوقف دون الرجوع للصفر المطلق',
     drilledHolesCount: 'الثقوب الفعلية المحفورة',
     drilledOfTotal: 'ثقب محفور من إجمالي',
+
+    // Toast & Notifications
+    notifEnabledToast: 'تم تفعيل إشعارات النظام (PWA Notifications)',
+    notifDisabledToast: 'تم إيقاف إشعارات النظام',
+    notifDeniedToast: 'يرجى السماح بالإشعارات من إعدادات المتصفح',
+    notifUnsupportedToast: 'الإشعارات غير مدعومة في هذا المتصفح',
+    notifLocalActivatedBody: 'تم تفعيل الإشعارات المحلية بنجاح بدون سيرفر!',
+    recipeAppliedPrefix: 'تم تطبيق الوصفة: ',
+    factoryDefaultsRestored: 'تمت استعادة الإعدادات المصنعية الافتراضية',
+    fixErrorsBeforeStart: 'يرجى معالجة الأخطاء الهندسية والتداخل أولاً قبل التشغيل.',
+    recipeSavedToast: 'تم حفظ الوصفة / المقال بنجاح',
+    importedModelAppliedToast: 'تم تطبيق القالب المستورد على المحاكي بنجاح',
+    singleLayerNoSpacing: 'طبقة واحدة فقط — لا حاجة لحساب التباعد.',
+    spacingAutoCalculated: 'تم حساب وتعديل خطوة التباعد الشعاعي بنجاح.',
+    customRecipeTag: 'مخصصة 🌟',
+
+    // Drawer & Workspace Layout
+    closeDrawer: 'إغلاق الدرج',
+    trayParamsTitle: 'ضبط معاملات الصينية',
+    swipeToAdjust: 'اسحب للأعلى أو الأسفل للتحكم',
+    showResults: 'عرض النتائج',
+    btnAdjustShort: 'ضبط',
+    btnResultsShort: 'نتائج',
+    viewResultsSim: 'عرض النتائج والمحاكاة',
+    adjustTrayParams: 'ضبط معاملات الصينية',
+
+    // Canvas Stage & Interactive Tools
+    zoomIn: 'تكبير',
+    zoomOut: 'تصغير',
+    zoomFit: 'ملاءمة للشاشة (100%)',
+    canvas2dPreview: 'المعاينة الهندسية 2D',
+    docMathTooltip: 'توثيق المنطق الرياضي وحسابات التباعد',
+    docMathAria: 'توثيق المنطق الرياضي',
+    hoverHead: 'الرأس:',
+    hoverAngle: 'الزاوية:',
+    hoverCoords: 'الإحداثيات:',
+    drilledStatus: 'تم الحفر',
+    pendingDrillStatus: 'بانتظار الحفر',
+    forbiddenCollision: 'تداخل محظور',
+
+    // Simulation Controls Telemetry
+    phaseRadialMove: 'انتقال شعاعي إلى الطبقة',
+    phaseAngularStep: 'تدوير الصينية بالخطوة الزاوية',
+    phaseDrillingTrio: 'حفر متزامن بالرؤوس الثلاثة (0° / 120° / 240°)',
+    btnSaveArticle: 'حفظ كـ Article / وصفة',
+    btnGenerateQr: 'توليد رمز الاستجابة السريعة (QR Code)',
+    phaseLabel: 'الطور:',
+    layerLabel: 'الطبقة: ',
+    stepLabel: 'الخطوة: ',
+    holesLabel: 'الثقوب: ',
+
+    // Save Article Modal
+    saveArticleTitle: 'حفظ الوصفة كـ Article جديد',
+    saveArticleSubtitle: 'إضافة البارمترات الحالية إلى صفحة الوصفات والـ Articles',
+    articleTitleLabel: 'عنوان الوصفة / المقال (Title)',
+    articleTitlePlaceholder: 'مثال: صينية إنتاج سريعة 35 سم',
+    articleDescLabel: 'وصف تفصيلي أو ملاحظات (Description)',
+    articleDescPlaceholder: 'اكتب ملاحظات حول سرعة الآلة أو نوع الإنتاج...',
+    btnCancel: 'إلغاء',
+    btnSaveToArticle: 'حفظ في الـ Article',
+
+    // Recipe Preview Modal
+    previewModelTitle: 'معاينة القالب المستورد',
+    previewModelSubtitle: 'تحقق من الأبعاد الهندسية ونقاط الحفر قبل الحفظ أو التطبيق',
+    viewOptionsLabel: 'خيارات العرض:',
+    previewStatusSafe: 'التصميم متوافق هندسياً مع آلة DCA',
+    previewStatusErr: 'يوجد تداخل بين الثقوب أو مع محيط الصينية',
+    previewParamsTitle: 'معاملات الصينية المستوردة',
+    layersUnit: 'طبقات',
+    btnSaveToPresets: 'حفظ في القوالب والمقالات',
+    btnApplyAndSimulate: 'تطبيق وتشغيل في المحاكي',
+
+    // TouchWin & LCD Screens
+    touchWinHeaderTitle: 'شاشات ووصفات الآلة TouchWin OP320',
+    touchWinSubtitle: 'شاشات LCD الخضراء الحقيقية وبطاقة وصفة الآلة الجاهزة للإدخال',
+    touchWinApplyTooltip: 'تطبيق وصفة شاشات الآلة الحقيقية: 12° / 15° / 20° / 12° بتباعد 39 مم',
+    touchWinApplyBtn: 'تطبيق وصفة الآلة (4L - 39mm)',
+    tabRecipeCard: 'بطاقة الوصفة',
+    tabLcdSingle: 'شاشة LCD',
+    tabLcdAll: 'معرض الـ 7',
+    machineRecipeTitle: 'وصفة الآلة — جاهزة للإدخال',
+    trayDiameterLabel: 'قطر الصينية:',
+    totalHolesLabel: 'إجمالي الثقوب:',
+    toolDiameterLabel: 'قطر الأداة:',
+    holesUnit: 'ثقب',
+    qrCodeLabel: 'رمز QR',
+    btnPrevScreen: 'الشاشة السابقة',
+    btnNextScreen: 'الشاشة التالية',
+
+    // Import Modal
+    importModalTitle: 'استيراد قالب ووصفة صناعية',
+    importModalSubtitle: 'اختر صيغة الملف لاستيرادها ومعاينتها',
+    importJsonTitle: 'ملف JSON (TouchWin PLC / قالب)',
+    importJsonSubtitle: 'استيراد وصفة إلكترونية ومعاملات الآلة الكاملة',
+    importCsvTitle: 'جدول نقاط CSV (Punched Points)',
+    importCsvSubtitle: 'استيراد إحداثيات ثقوب الحفر والطبقات',
+    importGcodeTitle: 'وصفة زوايا وسرعات TRIVIUM (.gcode/.txt)',
+    importGcodeSubtitle: 'استيراد معاملات الآلة والزوايا (TRIVIUM / TouchWin)',
+    importQrTitle: 'رمز الاستجابة السريعة QR Code',
+    importQrSubtitle: 'مسح بالكاميرا أو رفع صورة كود QR',
+    importCsvError: 'ملف CSV تالف أو يحتوي على أبعاد وطبقات خارج النطاق المسموح (50–2000 مم، 1–7 طبقات).',
+    importGcodeErrorPrefix: 'خطأ في استيراد G-code: ',
+
+    // Export Modal & Presets
+    exportModalTitle: 'تصدير القالب (اختر الصيغة)',
+    exportJsonTitle: 'ملف JSON (معاملات الوصفة وال PLC)',
+    exportJsonDesc: 'متوافق مع الاستيراد الفوري في شاشات TouchWin',
+    exportCsvTitle: 'ملف CSV (إحداثيات النقاط والثقوب)',
+    exportCsvDesc: 'جدول كامل لإحداثيات X و Y والطبقات لبرامج CNC',
+    exportQrTitle: 'بيانات QR (حمولة مختصرة للماسح)',
+    exportQrDesc: 'نص مختصر للتحويل إلى رمز استجابة سريعة',
+    exportTxtTitle: 'تقرير نصي (للمشغلين والصيانة HMI)',
+    exportTxtDesc: 'ملف نصي يلخص إعدادات الآلة وأوقات الدورة',
+    exportTriviumTitle: 'وصفة زوايا وسرعات (TRIVIUM)',
+    exportTriviumDesc: 'وصفة زوايا وسرعات لآلة TRIVIUM / TouchWin (وليس مسار CNC عام)',
+    confirmDeleteTitle: 'تأكيد الحذف',
+    importModelAria: 'استيراد قالب',
+    availablePresetsCount: 'قوالب متاحة',
+    activeBadge: 'النشطة',
+    applyBtn: 'تطبيق',
+    confirmDeleteBtn: 'تأكيد الحذف',
+
+    // QR Scanner Modal
+    qrScannerTitle: 'مسح واستقبال وصفة QR',
+    qrScannerSubtitle: 'قارئ TouchWin HMI اللاسلكي',
+    qrScannerGuide: 'وجّه الكاميرا نحو رمز QR',
+    qrScannerStopCamera: 'إيقاف الكاميرا',
+    qrScannerDirectCamera: 'مسح مباشر بالكاميرا',
+    qrScannerDirectDesc: 'مسح الكود عبر الكاميرا',
+    qrScannerUploadImage: 'تحميل صورة QR من الجهاز',
+    qrScannerUploadDesc: 'استيراد لقطة شاشة أو صورة',
+    qrScannerProcessingError: 'فشلت معالجة الصورة',
+    qrScannerNotFound: 'لم يتم العثور على رمز QR واضح في الصورة. تأكد من وضوح الصورة وزوايا الرمز.',
+
+    // PWA Install Guide
+    pwaInstalledBadge: 'التطبيق مثبت',
+    pwaGuideTitle: 'دليل تثبيت TRIVIUM120° يدوياً',
+    pwaGuideSubtitle: 'إضافة التطبيق إلى الشاشة الرئيسية',
+    pwaSafariStep1: '1. اضغط زر المشاركة (Share ⎋)',
+    pwaSafariStep1Desc: 'في شريط متصفح Safari أسفل الشاشة.',
+    pwaSafariStep2: '2. اختر "إضافة إلى الشاشة الرئيسية"',
+    pwaSafariStep2Desc: 'مرر للأسفل في القائمة ثم اضغط إضافة (Add).',
+    pwaChromeStep1: '1. افتح قائمة المتصفح (النقاط الثلاث ⁝)',
+    pwaChromeStep1Desc: 'في أعلى شريط عنوان المتصفح (Chrome / Edge).',
+    pwaChromeStep2: '2. اختر "تثبيت التطبيق" أو "إضافة للشاشة الرئيسية"',
+    pwaChromeStep2Desc: 'سيتم إنشاء أيقونة مستقلة للتطبيق على جهازك.',
+    pwaCloseGuide: 'إغلاق الدليل',
+
+    // Parameters Panel & Results Details
+    autoCalculateSpacingBtn: '⚙ احسب التباعد تلقائياً',
+    autoSpacingTooltip: 'حساب تباعد متساوٍ تماماً بين محيط أول طبقة ومحيط آخر طبقة',
+    equalSpacingDesc: 'التباعد الشعاعي المتساوي بين الحلقات:',
+    spacingCollisionDanger: '⚠ خطر: التباعد أقل من قطر الأداة — يحدث تداخل!',
+    customDistributionLabel: 'توزيع مخصص لكل طبقة',
+    pointsPerLayerUnit: 'نقطة/طبقة',
+    radialSettleLabel: 'استقرار التمدد الشعاعي',
+    rotationSettleLabel: 'استقرار تدوير الرأس',
+    modeStandardLabel: 'الوضع القياسي',
+    modeRepteurActiveLabel: 'Repteur مفعّل',
+    modeContinueLabel: 'استمرار زاوي',
+    modeAbsoluteLabel: 'مرجع مطلق',
+    mmUnit: 'مم',
+    cmUnit: 'سم',
+    toolWord: 'أداة',
+    marginWord: 'هامش',
+    ofSeven: 'من 7',
+    spacingAutoCalculatedHint: 'محسوب تلقائياً من شعاع أول حلقة وآخر حلقة — غير قابل للتحرير',
+    offsetLockedContinue: '0° (مقفل — استمرار شعاعي)',
+    offsetContinueDesc: 'في وضع الاستمرار الزاوي (continue)، الإزاحة التدريجية ملغاة؛ تستمر الطاولة شعاعياً من موضع آخر ضربة تلقائياً دون إزاحة إضافية.',
+    offsetAutoLabel: ' (تلقائي)',
+    stepRotServoPerHead: 'خطوة دوران السيرفو للرأس الواحد = ',
+    offsetAddDesc: 'تُزاح كل طبقة تدريجياً لمنع اصطفاف الثقوب خطياً وتحقيق مظهر دوامي متناسق.',
+    ptsPerMinUnit: 'ث/د',
+    stepsUnit: 'خطوة',
+    stagesUnit: 'مراحل',
+    holesActualRepteur: 'الثقوب الفعلية (Repteur)',
+    holesPerHeadUnit: 'حفر/رأس',
+
+    headerScanQrTitle: 'مسح واستقبال كود QR للوصفة',
+    headerSwitchLangTitle: 'Passer en Français',
+    headerTechModalTitle: 'الوصف التقني وفلسفة TRIVIUM',
+    switchLangBadge: 'FR',
+    pwaStatusIos: 'أجهزة iPhone / iPad تتطلب التثبيت اليدوي من قائمة مشاركة Safari:',
+    pwaStatusUnsupported: 'هذا المتصفح لا يدعم التثبيت التلقائي المباشر. يمكنك تثبيت التطبيق يدوياً من قائمة المتصفح:',
+    pwaStatusManual: 'نافذة التثبيت التلقائي غير متاحة حالياً (أو داخل معاينة). اتبع الخطوات اليدوية التالية:',
+    pwaInstallDirectTitle: 'تثبيت تطبيق TRIVIUM120° مباشرة (PWA)',
+    pwaInstallGuideTitle: 'طريقة تثبيت التطبيق على الجهاز',
+    pwaInstallDirectBtn: 'تثبيت التطبيق',
+    pwaInstallGuideBtn: 'تثبيت (دليل)',
+    sourceQrCode: 'رمز QR',
+    sourceImportedRecipe: 'وصفة مستوردة',
+    deleteConfirmDesc: 'هل أنت متأكد من رغبتك في حذف هذا القالب؟ لا يمكن التراجع عن هذا الإجراء.',
+    exportJsonTooltip: 'تصدير هذا القالب (JSON)',
+    deletePresetTooltip: 'حذف القالب',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -343,6 +740,8 @@ export const translations: Record<Language, Translations> = {
     themeLight: 'Clair',
 
     kpisTitle: 'Résultats géométriques & Indicateurs clés (KPIs)',
+    validationSubtitle: 'Validation géométrique, collisions et cadences',
+    validationAllGood: 'Calculs géométriques conformes : aucune collision, entraxes validés.',
     totalHoles: 'Total trous',
     d1Label: 'Diamètre 1ère couche (D₁)',
     dLastLabel: 'Diamètre fin (D_fin)',
@@ -406,5 +805,199 @@ export const translations: Record<Language, Translations> = {
     tableModeContinueHelp: 'Cumul des décalages angulaires sans retour forcé au zéro absolu',
     drilledHolesCount: 'Trous réellement percés',
     drilledOfTotal: 'trous percés sur un total de',
+
+    // Toast & Notifications
+    notifEnabledToast: 'Notifications PWA activées',
+    notifDisabledToast: 'Notifications PWA désactivées',
+    notifDeniedToast: 'Veuillez autoriser les notifications dans le navigateur',
+    notifUnsupportedToast: 'Notifications non prises en charge',
+    notifLocalActivatedBody: 'Notifications locales activées avec succès (sans serveur) !',
+    recipeAppliedPrefix: 'Recette appliquée : ',
+    factoryDefaultsRestored: "Paramètres d'usine restaurés",
+    fixErrorsBeforeStart: 'Veuillez corriger les erreurs de collision avant le démarrage.',
+    recipeSavedToast: 'Article / Recette enregistré avec succès',
+    importedModelAppliedToast: 'Modèle importé appliqué avec succès au simulateur',
+    singleLayerNoSpacing: "Une seule couche — pas d'espacement nécessaire.",
+    spacingAutoCalculated: 'Espacement radial calculé et ajusté avec succès.',
+    customRecipeTag: 'Personnalisée 🌟',
+
+    // Drawer & Workspace Layout
+    closeDrawer: 'Fermer',
+    trayParamsTitle: 'Paramètres du plateau',
+    swipeToAdjust: 'Déroulez pour ajuster',
+    showResults: 'Voir Résultats',
+    btnAdjustShort: 'Régler',
+    btnResultsShort: 'Résultats',
+    viewResultsSim: 'Voir Résultats & Simulation',
+    adjustTrayParams: 'Régler les paramètres',
+
+    // Canvas Stage & Interactive Tools
+    zoomIn: 'Zoom avant',
+    zoomOut: 'Zoom arrière',
+    zoomFit: "Ajuster à l'écran (100%)",
+    canvas2dPreview: 'Aperçu Géométrique 2D',
+    docMathTooltip: 'Documentation logique mathématique',
+    docMathAria: 'Documentation mathématique',
+    hoverHead: 'Tête :',
+    hoverAngle: 'Angle :',
+    hoverCoords: 'Coord :',
+    drilledStatus: 'Percé',
+    pendingDrillStatus: 'En attente',
+    forbiddenCollision: 'Collision interdite',
+
+    // Simulation Controls Telemetry
+    phaseRadialMove: 'Déplacement radial',
+    phaseAngularStep: 'Rotation angulaire pas-à-pas',
+    phaseDrillingTrio: 'Perçage 3 têtes synchronisées (0° / 120° / 240°)',
+    btnSaveArticle: 'Enregistrer Article / Recette',
+    btnGenerateQr: 'Générer QR Code',
+    phaseLabel: 'Phase :',
+    layerLabel: 'Couche : ',
+    stepLabel: 'Pas : ',
+    holesLabel: 'Trous : ',
+
+    // Save Article Modal
+    saveArticleTitle: 'Enregistrer comme Article',
+    saveArticleSubtitle: 'Ajouter les paramètres actuels à la liste des articles',
+    articleTitleLabel: "Titre de l'article",
+    articleTitlePlaceholder: 'Ex: Plateau production rapide 35 cm',
+    articleDescLabel: 'Description ou notes',
+    articleDescPlaceholder: 'Notes sur la production ou vitesse machine...',
+    btnCancel: 'Annuler',
+    btnSaveToArticle: 'Enregistrer',
+
+    // Recipe Preview Modal
+    previewModelTitle: 'Aperçu du modèle importé',
+    previewModelSubtitle: "Vérifiez la géométrie avant d'enregistrer ou d'appliquer",
+    viewOptionsLabel: "Options d'affichage:",
+    previewStatusSafe: 'Statut géométrique validé',
+    previewStatusErr: 'Collision ou débordement géométrique détecté',
+    previewParamsTitle: 'Paramètres géométriques',
+    layersUnit: 'L',
+    btnSaveToPresets: 'Enregistrer dans les articles',
+    btnApplyAndSimulate: 'Appliquer et simuler',
+
+    // TouchWin & LCD Screens
+    touchWinHeaderTitle: 'TouchWin OP320 Écrans & Recettes',
+    touchWinSubtitle: 'Écrans LCD verts et fiche de paramétrage prête pour saisie',
+    touchWinApplyTooltip: 'Appliquer la recette machine réelle : 12° / 15° / 20° / 12°, 39 mm',
+    touchWinApplyBtn: 'Appliquer recette (4L - 39mm)',
+    tabRecipeCard: 'Fiche Recette',
+    tabLcdSingle: 'Écran LCD',
+    tabLcdAll: '7 Écrans',
+    machineRecipeTitle: 'Fiche Recette Machine — Prête à saisir',
+    trayDiameterLabel: 'Diamètre plateau :',
+    totalHolesLabel: 'Total trous :',
+    toolDiameterLabel: 'Diamètre outil :',
+    holesUnit: 'trous',
+    qrCodeLabel: 'Code QR',
+    btnPrevScreen: 'Écran précédent',
+    btnNextScreen: 'Écran suivant',
+
+    // Import Modal
+    importModalTitle: 'Importer une recette',
+    importModalSubtitle: 'Sélectionnez le format du fichier',
+    importJsonTitle: 'Fichier JSON (TouchWin PLC)',
+    importJsonSubtitle: 'Recette complète TouchWin JSON',
+    importCsvTitle: 'Tableau CSV des points',
+    importCsvSubtitle: 'Coordonnées de perçage CSV',
+    importGcodeTitle: 'Recette angles/vitesses TRIVIUM',
+    importGcodeSubtitle: 'Import des paramètres machine TRIVIUM',
+    importQrTitle: 'Scanner un QR Code',
+    importQrSubtitle: 'Scan caméra ou image QR',
+    importCsvError: 'Fichier CSV invalide ou dimensions/couches hors limites autorisées (50–2000 mm, 1–7 couches).',
+    importGcodeErrorPrefix: "Erreur d'import G-code : ",
+
+    // Export Modal & Presets
+    exportModalTitle: 'Exporter le modèle (Format)',
+    exportJsonTitle: 'Fichier JSON (Complet)',
+    exportJsonDesc: 'Recommandé pour la sauvegarde',
+    exportCsvTitle: 'Fichier CSV (Coordonnées)',
+    exportCsvDesc: 'Tableau Excel / CNC des points',
+    exportQrTitle: 'Payload QR Code (Compact)',
+    exportQrDesc: 'Données prêtes pour QR Code',
+    exportTxtTitle: 'Rapport TXT (Opérateurs)',
+    exportTxtDesc: 'Résumé technique imprimable',
+    exportTriviumTitle: 'Recette angles/vitesses (TRIVIUM)',
+    exportTriviumDesc: 'Recette angles/vitesses TRIVIUM / TouchWin (non-CNC générique)',
+    confirmDeleteTitle: 'Confirmer la suppression',
+    importModelAria: 'Importer un modèle',
+    availablePresetsCount: 'modèles',
+    activeBadge: 'Active',
+    applyBtn: 'Choisir',
+    confirmDeleteBtn: 'Confirmer',
+
+    // QR Scanner Modal
+    qrScannerTitle: 'Scanner Recette QR',
+    qrScannerSubtitle: 'Lecteur TouchWin HMI',
+    qrScannerGuide: 'Pointez la caméra vers le QR code',
+    qrScannerStopCamera: 'Arrêter la caméra',
+    qrScannerDirectCamera: 'Scanner en direct avec la caméra',
+    qrScannerDirectDesc: 'Lecture instantanée via caméra',
+    qrScannerUploadImage: 'Charger une image QR',
+    qrScannerUploadDesc: "Importer une capture d'écran",
+    qrScannerProcessingError: 'Échec traitement image',
+    qrScannerNotFound: 'Aucun code QR détecté dans cette image.',
+
+    // PWA Install Guide
+    pwaInstalledBadge: 'Installé',
+    pwaGuideTitle: 'Guide d’installation manuelle PWA',
+    pwaGuideSubtitle: 'Ajouter à l’écran d’accueil',
+    pwaSafariStep1: '1. Appuyez sur Partager (⎋)',
+    pwaSafariStep1Desc: 'Dans la barre du navigateur Safari.',
+    pwaSafariStep2: '2. "Sur l\'écran d\'accueil" (⊞)',
+    pwaSafariStep2Desc: 'Faites défiler vers le bas puis appuyez sur Ajouter.',
+    pwaChromeStep1: '1. Ouvrez le menu du navigateur (⁝)',
+    pwaChromeStep1Desc: 'En haut à droite de Chrome ou Edge.',
+    pwaChromeStep2: '2. "Installer l\'application" ou "Ajouter à l\'écran d\'accueil"',
+    pwaChromeStep2Desc: 'Une icône dédiée sera créée sur votre appareil.',
+    pwaCloseGuide: 'Fermer le guide',
+
+    // Parameters Panel & Results Details
+    autoCalculateSpacingBtn: '⚙ Auto',
+    autoSpacingTooltip: 'Calculer un espacement uniforme entre la 1ère et la dernière couche',
+    equalSpacingDesc: 'Espacement radial uniforme :',
+    spacingCollisionDanger: '⚠ Danger : Espacement inférieur au diamètre outil — collision !',
+    customDistributionLabel: 'Distribution personnalisée',
+    pointsPerLayerUnit: 'pts/couche',
+    radialSettleLabel: 'Ramp expansion (settling)',
+    rotationSettleLabel: 'Ramp rotation (settling)',
+    modeStandardLabel: 'Mode standard',
+    modeRepteurActiveLabel: 'Répteur actif',
+    modeContinueLabel: 'Continuité',
+    modeAbsoluteLabel: 'Absolu',
+    mmUnit: 'mm',
+    cmUnit: 'cm',
+    toolWord: 'Outil',
+    marginWord: 'Marge',
+    ofSeven: '/ 7',
+    spacingAutoCalculatedHint: 'Calculé automatiquement à partir du premier et dernier rayon — non modifiable',
+    offsetLockedContinue: '0° (verrouillé)',
+    offsetContinueDesc: 'En mode continuité, le décalage progressif est désactivé ; la table reprend radialement du dernier perçage sans décalage additionnel.',
+    offsetAutoLabel: ' (auto)',
+    stepRotServoPerHead: 'Pas de rotation du servo par tête = ',
+    offsetAddDesc: 'Décalage angulaire progressif pour éviter l’alignement radial.',
+    ptsPerMinUnit: 'p/m',
+    stepsUnit: 'p',
+    stagesUnit: 'st',
+    holesActualRepteur: 'Trous réels (Répteur)',
+    holesPerHeadUnit: 'trous/tête',
+
+    headerScanQrTitle: 'Scanner QR pour recevoir recette',
+    headerSwitchLangTitle: 'التحويل إلى العربية',
+    headerTechModalTitle: 'Description technique et philosophie TRIVIUM',
+    switchLangBadge: 'AR',
+    pwaStatusIos: 'Sur iPhone / iPad, l’installation se fait manuellement via le menu Partager de Safari :',
+    pwaStatusUnsupported: 'Ce navigateur ne prend pas en charge l’installation directe. Installez manuellement via le menu :',
+    pwaStatusManual: 'L’invite automatique n’est pas disponible actuellement. Suivez ces étapes manuelles :',
+    pwaInstallDirectTitle: 'Installer TRIVIUM120° (PWA)',
+    pwaInstallGuideTitle: 'Guide d’installation PWA',
+    pwaInstallDirectBtn: 'Installer',
+    pwaInstallGuideBtn: 'Installer (Guide)',
+    sourceQrCode: 'Code QR',
+    sourceImportedRecipe: 'Recette importée',
+    deleteConfirmDesc: 'Êtes-vous sûr de vouloir supprimer ce modèle ? Cette action est irréversible.',
+    exportJsonTooltip: 'Exporter (JSON)',
+    deletePresetTooltip: 'Supprimer',
   },
 };

@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertOctagon, RotateCcw, Trash2 } from 'lucide-react';
+import { safeStorage } from '../core/safeStorage';
 
 interface Props {
   children: ReactNode;
@@ -35,12 +36,8 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleResetAndReload = () => {
-    try {
-      localStorage.removeItem('hmi-tray-designer-oneui8-v2');
-      localStorage.removeItem('hmi-tray-designer-oneui8-v3');
-    } catch (e) {
-      console.warn('Failed to clear storage:', e);
-    }
+    safeStorage.removeItem('hmi-tray-designer-oneui8-v2');
+    safeStorage.removeItem('hmi-tray-designer-oneui8-v3');
     window.location.reload();
   };
 

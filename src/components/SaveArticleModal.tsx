@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BookmarkPlus, X, Check } from 'lucide-react';
-import { Translations, Language } from '../core/i18n';
+import { Translations, Language, translations } from '../core/i18n';
 
 interface SaveArticleModalProps {
   isOpen: boolean;
@@ -14,8 +14,10 @@ export const SaveArticleModal: React.FC<SaveArticleModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  t,
   lang = 'ar',
 }) => {
+  const activeT = t || translations[lang];
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
@@ -41,10 +43,10 @@ export const SaveArticleModal: React.FC<SaveArticleModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'حفظ الوصفة كـ Article جديد' : 'Enregistrer comme Article'}
+                {activeT.saveArticleTitle}
               </h3>
               <p className="text-[11px] text-[#64748b]">
-                {lang === 'ar' ? 'إضافة البارمترات الحالية إلى صفحة الوصفات والـ Articles' : 'Ajouter les paramètres actuels à la liste des articles'}
+                {activeT.saveArticleSubtitle}
               </p>
             </div>
           </div>
@@ -61,12 +63,12 @@ export const SaveArticleModal: React.FC<SaveArticleModalProps> = ({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="block text-xs font-bold text-[#475569] mb-1.5">
-              {lang === 'ar' ? 'عنوان الوصفة / المقال (Title)' : 'Titre de l\'article'}
+              {activeT.articleTitleLabel}
             </label>
             <input
               type="text"
               required
-              placeholder={lang === 'ar' ? 'مثال: صينية إنتاج سريعة 35 سم' : 'Ex: Plateau production rapide 35 cm'}
+              placeholder={activeT.articleTitlePlaceholder}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full py-2.5 px-3.5 rounded-2xl bg-[#f8fafc] border border-[#cbd5e1] text-xs font-bold text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb] transition-all"
@@ -75,11 +77,11 @@ export const SaveArticleModal: React.FC<SaveArticleModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-[#475569] mb-1.5">
-              {lang === 'ar' ? 'وصف تفصيلي أو ملاحظات (Description)' : 'Description ou notes'}
+              {activeT.articleDescLabel}
             </label>
             <textarea
               rows={3}
-              placeholder={lang === 'ar' ? 'اكتب ملاحظات حول سرعة الآلة أو نوع الإنتاج...' : 'Notes sur la production ou vitesse machine...'}
+              placeholder={activeT.articleDescPlaceholder}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full py-2.5 px-3.5 rounded-2xl bg-[#f8fafc] border border-[#cbd5e1] text-xs text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb] transition-all resize-none"
@@ -93,14 +95,14 @@ export const SaveArticleModal: React.FC<SaveArticleModalProps> = ({
               onClick={onClose}
               className="flex-1 py-2.5 px-4 rounded-xl bg-[#f1f5f9] hover:bg-[#e2e8f0] text-xs font-bold text-[#475569] transition-all cursor-pointer active:scale-95"
             >
-              {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+              {activeT.btnCancel}
             </button>
             <button
               type="submit"
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-xs font-bold text-white shadow-md shadow-[#2563eb]/20 transition-all cursor-pointer active:scale-95"
             >
               <Check className="w-4 h-4 text-white" />
-              <span>{lang === 'ar' ? 'حفظ في الـ Article' : 'Enregistrer'}</span>
+              <span>{activeT.btnSaveToArticle}</span>
             </button>
           </div>
         </form>

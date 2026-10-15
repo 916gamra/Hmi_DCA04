@@ -7,7 +7,7 @@ import {
   parseRecipeGCode,
   formatRecipeErrorsList,
 } from '../core/recipe';
-import { Translations, Language } from '../core/i18n';
+import { Translations, Language, translations } from '../core/i18n';
 
 interface ImportChoiceModalProps {
   isOpen: boolean;
@@ -23,8 +23,10 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
   onClose,
   onRecipeParsed,
   onTriggerQrScan,
+  t,
   lang = 'ar',
 }) => {
+  const activeT = t || translations[lang];
   const jsonInputRef = useRef<HTMLInputElement | null>(null);
   const csvInputRef = useRef<HTMLInputElement | null>(null);
   const gcodeInputRef = useRef<HTMLInputElement | null>(null);
@@ -65,11 +67,7 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
         onClose();
         onRecipeParsed(parsed, file.name.replace(/\.csv$/i, ''));
       } else {
-        setError(
-          lang === 'ar'
-            ? 'ملف CSV تالف أو يحتوي على أبعاد وطبقات خارج النطاق المسموح (50–2000 مم، 1–7 طبقات).'
-            : 'Fichier CSV invalide ou dimensions/couches hors limites autorisées (50–2000 mm, 1–7 couches).'
-        );
+        setError(activeT.importCsvError);
       }
     };
     reader.readAsText(file);
@@ -92,11 +90,7 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
         const localized = result.errors
           ? formatRecipeErrorsList(result.errors, lang)
           : result.error || '';
-        setError(
-          lang === 'ar'
-            ? `خطأ في استيراد G-code: ${localized}`
-            : `Erreur d'import G-code : ${localized}`
-        );
+        setError(`${activeT.importGcodeErrorPrefix}${localized}`);
       }
     };
     reader.readAsText(file);
@@ -117,10 +111,10 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'استيراد قالب ووصفة صناعية' : 'Importer une recette'}
+                {activeT.importModalTitle}
               </h3>
               <p className="text-[11px] text-[#64748b]">
-                {lang === 'ar' ? 'اختر صيغة الملف لاستيرادها ومعاينتها' : 'Sélectionnez le format du fichier'}
+                {activeT.importModalSubtitle}
               </p>
             </div>
           </div>
@@ -177,10 +171,10 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <span className="block text-xs font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'ملف JSON (TouchWin PLC / قالب)' : 'Fichier JSON (TouchWin PLC)'}
+                {activeT.importJsonTitle}
               </span>
               <span className="text-[11px] text-[#64748b] block truncate">
-                {lang === 'ar' ? 'استيراد وصفة إلكترونية ومعاملات الآلة الكاملة' : 'Recette complète TouchWin JSON'}
+                {activeT.importJsonSubtitle}
               </span>
             </div>
           </button>
@@ -196,10 +190,10 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <span className="block text-xs font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'جدول نقاط CSV (Punched Points)' : 'Tableau CSV des points'}
+                {activeT.importCsvTitle}
               </span>
               <span className="text-[11px] text-[#64748b] block truncate">
-                {lang === 'ar' ? 'استيراد إحداثيات ثقوب الحفر والطبقات' : 'Coordonnées de perçage CSV'}
+                {activeT.importCsvSubtitle}
               </span>
             </div>
           </button>
@@ -215,10 +209,10 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <span className="block text-xs font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'وصفة زوايا وسرعات TRIVIUM (.gcode/.txt)' : 'Recette angles/vitesses TRIVIUM'}
+                {activeT.importGcodeTitle}
               </span>
               <span className="text-[11px] text-[#64748b] block truncate">
-                {lang === 'ar' ? 'استيراد معاملات الآلة والزوايا (TRIVIUM / TouchWin)' : 'Import des paramètres machine TRIVIUM'}
+                {activeT.importGcodeSubtitle}
               </span>
             </div>
           </button>
@@ -237,10 +231,10 @@ export const ImportChoiceModal: React.FC<ImportChoiceModalProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <span className="block text-xs font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'رمز الاستجابة السريعة QR Code' : 'Scanner un QR Code'}
+                {activeT.importQrTitle}
               </span>
               <span className="text-[11px] text-[#64748b] block truncate">
-                {lang === 'ar' ? 'مسح بالكاميرا أو رفع صورة كود QR' : 'Scan caméra ou image QR'}
+                {activeT.importQrSubtitle}
               </span>
             </div>
           </button>

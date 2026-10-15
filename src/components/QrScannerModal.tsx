@@ -184,7 +184,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          setError(lang === 'ar' ? 'فشل معالجة الصورة' : 'Échec traitement image');
+          setError(t.qrScannerProcessingError);
           return;
         }
         ctx.drawImage(img, 0, 0);
@@ -196,11 +196,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         if (code && code.data) {
           handleRecipeScanned(code.data);
         } else {
-          setError(
-            lang === 'ar'
-              ? 'لم يتم العثور على رمز QR واضح في الصورة. تأكد من وضوح الصورة وزوايا الرمز.'
-              : 'Aucun code QR détecté dans cette image.'
-          );
+          setError(t.qrScannerNotFound);
         }
       };
       img.src = event.target?.result as string;
@@ -220,7 +216,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200 select-none"
-      dir="ltr"
+      dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
       <div className="bg-white rounded-3xl border border-[#e2e8f0] shadow-2xl max-w-sm w-full overflow-hidden p-5 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
         {/* Header */}
@@ -231,10 +227,10 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'مسح واستقبال وصفة QR' : 'Scanner Recette QR'}
+                {t.qrScannerTitle}
               </h3>
               <p className="text-[10px] text-[#64748b]">
-                {lang === 'ar' ? 'قارئ TouchWin HMI اللاسلكي' : 'Lecteur TouchWin HMI'}
+                {t.qrScannerSubtitle}
               </p>
             </div>
           </div>
@@ -288,7 +284,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               </div>
 
               <span className="absolute bottom-2.5 px-3 py-1 rounded-full bg-black/60 text-white text-[10px] font-medium backdrop-blur-xs">
-                {lang === 'ar' ? 'وجّه الكاميرا نحو رمز QR' : 'Pointez la caméra vers le QR code'}
+                {t.qrScannerGuide}
               </span>
             </div>
 
@@ -300,7 +296,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               }}
               className="w-full py-2 px-3 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
             >
-              {lang === 'ar' ? 'إيقاف الكاميرا' : 'Arrêter la caméra'}
+              {t.qrScannerStopCamera}
             </button>
           </div>
         ) : (
@@ -310,23 +306,23 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             <button
               type="button"
               onClick={handleStartCamera}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#2563eb] hover:bg-blue-50/40 transition-all cursor-pointer text-left active:scale-98"
+              className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#2563eb] hover:bg-blue-50/40 transition-all cursor-pointer text-start active:scale-98"
             >
               <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#2563eb] flex items-center justify-center shrink-0">
                 <Camera className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <span className="block text-xs font-bold text-[#0f172a]">
-                  {lang === 'ar' ? 'مسح مباشر بالكاميرا' : 'Scanner en direct avec la caméra'}
+                  {t.qrScannerDirectCamera}
                 </span>
                 <span className="text-[11px] text-[#64748b] truncate block">
-                  {lang === 'ar' ? 'مسح الكود عبر الكاميرا' : 'Lecture instantanée via caméra'}
+                  {t.qrScannerDirectDesc}
                 </span>
               </div>
             </button>
 
             {/* Upload Image File Button */}
-            <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#059669] hover:bg-emerald-50/40 transition-all cursor-pointer text-left active:scale-98">
+            <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#059669] hover:bg-emerald-50/40 transition-all cursor-pointer text-start active:scale-98">
               <input
                 type="file"
                 accept="image/*"
@@ -338,10 +334,10 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="block text-xs font-bold text-[#0f172a]">
-                  {lang === 'ar' ? 'تحميل صورة QR من الجهاز' : 'Charger une image QR'}
+                  {t.qrScannerUploadImage}
                 </span>
                 <span className="text-[11px] text-[#64748b] truncate block">
-                  {lang === 'ar' ? 'استيراد لقطة شاشة أو صورة' : 'Importer une capture d\'écran'}
+                  {t.qrScannerUploadDesc}
                 </span>
               </div>
             </label>

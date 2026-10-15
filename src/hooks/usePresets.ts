@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RecipePreset, TrayParams } from '../types';
 import { safeStorage } from '../core/safeStorage';
+import { translations, Language } from '../core/i18n';
 
 const CUSTOM_PRESETS_STORAGE_KEY = 'hmi-tray-custom-presets';
 
@@ -17,7 +18,7 @@ export function usePresets(currentParams: TrayParams) {
     (
       title: string,
       description: string,
-      lang: 'ar' | 'fr' = 'ar',
+      lang: Language = 'ar',
       overrideParams?: TrayParams
     ) => {
       const newPreset: RecipePreset = {
@@ -26,7 +27,7 @@ export function usePresets(currentParams: TrayParams) {
         nameFr: title,
         description: description,
         descriptionFr: description,
-        tag: lang === 'ar' ? 'مخصصة 🌟' : 'Personnalisée 🌟',
+        tag: translations[lang].customRecipeTag,
         tagFr: 'Personnalisée 🌟',
         params: overrideParams ? { ...overrideParams } : { ...currentParams },
       };

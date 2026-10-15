@@ -212,7 +212,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
             <div className="min-w-0 flex flex-col text-left">
               <h2 className="text-sm font-bold text-[#0f172a] truncate">{t.cardGeoTitle}</h2>
               <span className="text-[11px] font-mono text-[#64748b] truncate mt-0.5">
-                Ø{params.trayD} mm • {lang === 'ar' ? 'أداة' : 'Outil'} Ø{params.tool} mm • {lang === 'ar' ? 'هامش' : 'Marge'} {params.margin} mm
+                Ø{params.trayD} mm • {t.toolWord} Ø{params.tool} mm • {t.marginWord} {params.margin} mm
               </span>
             </div>
           </div>
@@ -241,7 +241,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                         : 'text-[#64748b]'
                     }`}
                   >
-                    {lang === 'ar' ? 'سم' : 'cm'}
+                    {t.cmUnit}
                   </button>
                   <button
                     type="button"
@@ -252,7 +252,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                         : 'text-[#64748b]'
                     }`}
                   >
-                    {lang === 'ar' ? 'مم' : 'mm'}
+                    {t.mmUnit}
                   </button>
                 </div>
               </div>
@@ -266,7 +266,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                 onChange={handleTrayDiameter}
               />
               <span className="text-[11px] text-[#64748b] block mt-1 font-mono">
-                {lang === 'ar' ? `قطر الصينية الكلي = ${params.trayD} مم` : `Diamètre total = ${params.trayD} mm`}
+                {t.trayDiameterLabel} {params.trayD} {t.mmUnit}
               </span>
             </div>
 
@@ -275,7 +275,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
               <div className="flex justify-between items-center text-xs font-semibold text-[#475569] mb-1.5">
                 <label htmlFor="toolD">{t.toolDiameter}</label>
                 <span className="text-[11px] text-[#2563eb] font-bold font-mono">
-                  Ø {params.tool} {lang === 'ar' ? 'مم' : 'mm'}
+                  Ø {params.tool} {t.mmUnit}
                 </span>
               </div>
               <NumberStepper
@@ -284,7 +284,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                 min={0.5}
                 max={30}
                 step={0.5}
-                unit={lang === 'ar' ? 'مم' : 'mm'}
+                unit={t.mmUnit}
                 onChange={(val) => onChange({ tool: Math.max(0.5, val) })}
               />
             </div>
@@ -303,7 +303,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                         : 'text-[#64748b]'
                     }`}
                   >
-                    {lang === 'ar' ? 'سم' : 'cm'}
+                    {t.cmUnit}
                   </button>
                   <button
                     type="button"
@@ -314,7 +314,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                         : 'text-[#64748b]'
                     }`}
                   >
-                    {lang === 'ar' ? 'مم' : 'mm'}
+                    {t.mmUnit}
                   </button>
                 </div>
               </div>
@@ -328,9 +328,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                 onChange={handleMargin}
               />
               <p className="text-[11px] text-[#64748b] mt-1 font-mono">
-                {lang === 'ar'
-                  ? `قطر الطبقة الأولى D₁ = ${d1.toFixed(1)} مم (نصف القطر R₁ = ${(d1 / 2).toFixed(1)} مم)`
-                  : `Diamètre 1ère couche D₁ = ${d1.toFixed(1)} mm (Rayon R₁ = ${(d1 / 2).toFixed(1)} mm)`}
+                D₁ = {d1.toFixed(1)} {t.mmUnit} (R₁ = {(d1 / 2).toFixed(1)} {t.mmUnit})
               </p>
             </div>
           </div>
@@ -351,7 +349,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
             <div className="min-w-0 flex flex-col text-left">
               <h2 className="text-sm font-bold text-[#0f172a] truncate">{t.cardRingsTitle}</h2>
               <span className="text-[11px] font-mono text-[#64748b] truncate mt-0.5">
-                {params.layers} {lang === 'ar' ? 'طبقات' : 'couches'} • s = {params.spacing} mm • D₁ = {d1.toFixed(1)} mm
+                {params.layers} {t.layersUnit} • s = {params.spacing} mm • D₁ = {d1.toFixed(1)} mm
               </span>
             </div>
           </div>
@@ -371,7 +369,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
               <div className="flex justify-between items-center text-xs font-semibold text-[#475569] mb-1.5">
                 <label htmlFor="layers">{t.layersCount}</label>
                 <span className="text-[11px] text-[#2563eb] font-bold">
-                  {params.layers} {lang === 'ar' ? 'من 7' : '/ 7'}
+                  {params.layers} {t.ofSeven}
                 </span>
               </div>
               <NumberStepper
@@ -410,7 +408,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                         : 'text-[#64748b]'
                     }`}
                   >
-                    {lang === 'ar' ? 'سم' : 'cm'}
+                    {t.cmUnit}
                   </button>
                   <button
                     type="button"
@@ -421,43 +419,37 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                         : 'text-[#64748b]'
                     }`}
                   >
-                    {lang === 'ar' ? 'مم' : 'mm'}
+                    {t.mmUnit}
                   </button>
                 </div>
               </div>
               <div className="opacity-90 bg-slate-50 p-2.5 rounded-xl border border-slate-200 cursor-not-allowed select-none">
                 <div className="flex items-center justify-between font-mono font-bold text-xs text-[#2563eb]">
-                  <span>s = {params.spacing} {lang === 'ar' ? 'مم' : 'mm'}</span>
+                  <span>s = {params.spacing} {t.mmUnit}</span>
                   <span className="text-[10px] text-slate-500 font-sans">
-                    {lang === 'ar' ? `(فرق القطر = ${2 * params.spacing} مم)` : `(diam = ${2 * params.spacing} mm)`}
+                    (ΔD = {2 * params.spacing} {t.mmUnit})
                   </span>
                 </div>
               </div>
               <span className="text-[10px] text-[#64748b] font-medium block mt-1.5 leading-relaxed">
-                {lang === 'ar'
-                  ? 'محسوب تلقائياً من شعاع أول حلقة وآخر حلقة — غير قابل للتحرير'
-                  : 'Calculé automatiquement à partir du premier et dernier rayon — non modifiable'}
+                {t.spacingAutoCalculatedHint}
               </span>
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 mt-2 space-y-1 text-[11px]">
                 <div className="flex justify-between text-[#0f172a]">
                   <span>{t.spacingLaw}</span>
                   <span className="font-mono font-bold">
-                    {lang === 'ar'
-                      ? `R_التالية = R_السابقة − ${params.spacing} مم`
-                      : `R_suiv = R_préc − ${params.spacing} mm`}
+                    R_next = R_prev − {params.spacing} {t.mmUnit}
                   </span>
                 </div>
                 <div className="flex justify-between text-[#475569]">
                   <span>{t.servoRadialCourse}</span>
                   <span className="font-mono font-bold text-[#059669]">
-                    {radialMovement.toFixed(1)} {lang === 'ar' ? 'مم' : 'mm'}
+                    {radialMovement.toFixed(1)} {t.mmUnit}
                   </span>
                 </div>
                 {!isSpacingSafe && (
                   <p className="text-red-600 font-semibold text-[10px] pt-1 border-t border-red-100">
-                    {lang === 'ar'
-                      ? `⚠ تحذير: التباعد الشعاعي (${radialMovement.toFixed(1)} مم) أقل من قطر الأداة (${params.tool} مم) — يحدث تداخل بين الحلقات!`
-                      : `⚠ Attention : Espacement radial (${radialMovement.toFixed(1)} mm) < diamètre outil (${params.tool} mm) — collision !`}
+                    {t.spacingCollisionDanger}
                   </p>
                 )}
               </div>
@@ -478,7 +470,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                           : 'text-[#64748b]'
                       }`}
                     >
-                      {lang === 'ar' ? 'سم' : 'cm'}
+                      {t.cmUnit}
                     </button>
                     <button
                       type="button"
@@ -489,21 +481,17 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                           : 'text-[#64748b]'
                       }`}
                     >
-                      {lang === 'ar' ? 'مم' : 'mm'}
+                      {t.mmUnit}
                     </button>
                   </div>
                   <button
                     type="button"
                     onClick={onAutoCalculateSpacing}
                     className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#2563eb] hover:bg-[#1d4ed8] px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer select-none active:scale-95"
-                    title={
-                      lang === 'ar'
-                        ? 'حساب تباعد متساوٍ تماماً بين محيط أول طبقة ومحيط آخر طبقة'
-                        : "Calculer un espacement uniforme entre la 1ère et la dernière couche"
-                    }
+                    title={t.autoSpacingTooltip}
                   >
                     <Calculator className="w-3.5 h-3.5 text-white" />
-                    <span>{lang === 'ar' ? '⚙ احسب التباعد تلقائياً' : '⚙ Auto'}</span>
+                    <span>{t.autoCalculateSpacingBtn}</span>
                   </button>
                 </div>
               </div>
@@ -521,7 +509,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
               <div className="mt-3 bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3 text-xs flex flex-col gap-2">
                 <div className="flex items-center justify-between font-bold text-[#1e40af] text-[11px] border-b border-blue-200/60 pb-1.5">
                   <span>{t.mathDocTitle}</span>
-                  <span className="font-mono">{params.layers} {lang === 'ar' ? 'طبقات' : 'couches'}</span>
+                  <span className="font-mono">{params.layers} {t.layersUnit}</span>
                 </div>
 
                 <div className="space-y-1.5 text-[11px] text-[#1e3a8a] leading-relaxed">
@@ -529,7 +517,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                     <strong>{t.mathDocMarginTitle}</strong> {t.mathDocMarginDesc}
                     <br />
                     <span className="font-mono font-bold bg-white/70 px-1.5 py-0.5 rounded border border-blue-200 inline-block mt-0.5">
-                      R₁ = ({params.trayD} ÷ 2) − {params.margin} = {((params.trayD / 2) - params.margin).toFixed(1)} {lang === 'ar' ? 'مم' : 'mm'} (D₁ = {d1.toFixed(1)} مم)
+                      R₁ = ({params.trayD} ÷ 2) − {params.margin} = {((params.trayD / 2) - params.margin).toFixed(1)} {t.mmUnit} (D₁ = {d1.toFixed(1)} {t.mmUnit})
                     </span>
                     <span className="text-[10px] text-[#475569] block mt-0.5">
                       {t.mathDocMarginNote}
@@ -538,9 +526,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
 
                   <p>
                     <strong>{t.mathDocUniformSpacing}</strong>{' '}
-                    {lang === 'ar'
-                      ? 'التباعد الشعاعي المتساوي بين الحلقات:'
-                      : 'Espacement radial uniforme :'}
+                    {t.equalSpacingDesc}
                     <br />
                     <span className="font-mono font-bold bg-white/70 px-1.5 py-0.5 rounded border border-blue-200 inline-block mt-0.5">
                       s = (R₁ − R_fin) ÷ ({params.layers} − 1)
@@ -552,13 +538,11 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                     <br />
                     {t.mathDocServoMoveDesc}
                     <strong className="font-mono text-[#059669] mr-1">
-                      {params.spacing.toFixed(1)} {lang === 'ar' ? 'مم' : 'mm'}
+                      {params.spacing.toFixed(1)} {t.mmUnit}
                     </strong>
                     {params.spacing < params.tool && (
                       <span className="text-red-600 font-bold block mt-0.5">
-                        {lang === 'ar'
-                          ? `⚠ خطر: التباعد أقل من قطر الأداة (${params.tool} مم) — يحدث تداخل!`
-                          : `⚠ Danger : Espacement inférieur au diamètre outil (${params.tool} mm) — collision !`}
+                        {t.spacingCollisionDanger}
                       </span>
                     )}
                   </p>
@@ -584,7 +568,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                               : 'bg-white border-blue-200 text-[#0f172a]'
                           }`}
                         >
-                          L{idx + 1}: {layerD.toFixed(1)} {lang === 'ar' ? 'مم' : 'mm'}
+                          L{idx + 1}: {layerD.toFixed(1)} {t.mmUnit}
                         </div>
                       );
                     })}
@@ -611,10 +595,10 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
               <h2 className="text-sm font-bold text-[#0f172a] truncate">{t.cardPointsTitle}</h2>
               <span className="text-[11px] font-mono text-[#64748b] truncate mt-0.5">
                 {params.mode === 'all'
-                  ? `${params.rawBase} ${lang === 'ar' ? 'نقطة/طبقة' : 'pts/couche'} (${params.rawBase / 3} × 3)${
+                  ? `${params.rawBase} ${t.pointsPerLayerUnit} (${params.rawBase / 3} × 3)${
                       params.tableMode === 'continue' ? '' : ` • +${params.addAngle}°`
                     }`
-                  : (lang === 'ar' ? 'توزيع مخصص لكل طبقة' : 'Distribution personnalisée')}
+                  : t.customDistributionLabel}
               </span>
             </div>
           </div>
@@ -741,7 +725,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                               className="w-2.5 h-2.5 rounded-full inline-block"
                               style={{ backgroundColor: color }}
                             />
-                            {lang === 'ar' ? `الطبقة L${idx + 1}` : `Couche L${idx + 1}`}
+                            {t.tableLayer} L{idx + 1}
                           </span>
                           <span className="text-[11px] font-mono text-[#64748b]">
                             {t.customModeStepAngle} {(360 / c.n).toFixed(1)}°
@@ -927,7 +911,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-[#f1f5f9]">
               <div>
                 <label className="block text-[11px] font-semibold text-[#475569] mb-1.5">
-                  {lang === 'ar' ? 'استقرار التمدد الشعاعي' : 'Ramp expansion (settling)'}
+                  {t.radialSettleLabel}
                 </label>
                 <NumberStepper
                   value={Math.round((params.timing.rampExpansionSec ?? 0.08) * 1000)}
@@ -949,7 +933,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
 
               <div>
                 <label className="block text-[11px] font-semibold text-[#475569] mb-1.5">
-                  {lang === 'ar' ? 'استقرار تدوير الرأس' : 'Ramp rotation (settling)'}
+                  {t.rotationSettleLabel}
                 </label>
                 <NumberStepper
                   value={Math.round((params.timing.rampRotationSec ?? 0.035) * 1000)}
@@ -994,7 +978,7 @@ export const ParametersPanel: React.FC<ParametersPanelProps> = ({
                 {t.cardMachineModesTitle}
               </span>
               <span className="text-[10px] text-[#64748b]">
-                {params.repteurEnabled ? (lang === 'ar' ? 'Repteur مفعّل' : 'Répteur actif') : (lang === 'ar' ? 'الوضع القياسي' : 'Mode standard')} • {params.tableMode === 'continue' ? (lang === 'ar' ? 'استمرار زاوي' : 'Continuité') : (lang === 'ar' ? 'مرجع مطلق' : 'Absolu')}
+                {params.repteurEnabled ? t.modeRepteurActiveLabel : t.modeStandardLabel} • {params.tableMode === 'continue' ? t.modeContinueLabel : t.modeAbsoluteLabel}
               </span>
             </div>
           </div>

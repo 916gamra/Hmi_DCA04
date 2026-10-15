@@ -3,144 +3,105 @@ import { TrayParams } from '../types';
 import { DEFAULT_PARAMS } from '../core/constants';
 import { normalizeAndHydrateParams, validateRecipeParams } from '../core/recipeFormat';
 import { safeStorage } from '../core/safeStorage';
+import { translations, Language } from '../core/i18n';
 
 export const STORAGE_KEY = 'hmi-tray-designer-oneui8-v5';
-export const STORAGE_SCHEMA_VERSION = 5;
+const LEGACY_STORAGE_KEY_V4 = 'hmi-tray-designer-oneui8-v4';
+const LEGACY_STORAGE_KEY_V3 = 'hmi-tray-designer-oneui8-v3';
+const LEGACY_STORAGE_KEY_V2 = 'hmi-tray-designer-oneui8-v2';
 
-interface StoredParametersPayload {
-  version: number;
-  params: Partial<TrayParams>;
-}
-
-export function loadInitialParams(): TrayParams {
-  try {
-    const raw = safeStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        const payload = parsed as StoredParametersPayload;
-        const candidate =
-          payload.version === STORAGE_SCHEMA_VERSION && payload.params && typeof payload.params === 'object'
-            ? payload.params
-            : (parsed as Partial<TrayParams>);
-        if (
-          candidate &&
-          typeof candidate === 'object' &&
-          typeof candidate.trayD === 'number' &&
-          Number.isFinite(candidate.trayD) &&
-          candidate.trayD > 0
-        ) {
-          const hydrated = normalizeAndHydrateParams(candidate);
-          if (validateRecipeParams(hydrated).ok) {
-            return hydrated;
-          }
+export function useTrayParams() {
+  const [params, setParams] = useState<TrayParams>(() => {
+    // 1. Attempt reading active schema (v5) via safeStorage
+    try {
+      const savedV5 = safeStorage.getItem(STORAGE_KEY);
+      if (savedV5) {
+        const parsed = JSON.parse(savedV5);
+        const validated = validateRecipeParams(parsed);
+        if (validated.isValid) {
+          return normalizeAndHydrateParams(parsed);
         }
       }
+    } catch {
+      // ignore JSON parse errors
     }
 
-    // Attempt migration from v4 or legacy keys if available
-    const oldV4 = safeStorage.getItem('hmi-tray-designer-oneui8-v4');
-    if (oldV4) {
-      try {
-        const parsedV4 = JSON.parse(oldV4);
-        const candidateV4 =
-          parsedV4 && typeof parsedV4 === 'object' && 'params' in parsedV4
-            ? parsedV4.params
-            : parsedV4;
-        if (
-          candidateV4 &&
-          typeof candidateV4 === 'object' &&
-          typeof candidateV4.trayD === 'number' &&
-          Number.isFinite(candidateV4.trayD) &&
-          candidateV4.trayD > 0
-        ) {
-          safeStorage.removeItem('hmi-tray-designer-oneui8-v4');
-          const hydratedV4 = normalizeAndHydrateParams(candidateV4);
-          if (validateRecipeParams(hydratedV4).ok) {
-            return hydratedV4;
-          }
-        }
-      } catch {
-        safeStorage.removeItem('hmi-tray-designer-oneui8-v4');
+    // 2. Migration fallback: check legacy v4 schema
+    try {
+      const savedV4 = safeStorage.getItem(LEGACY_STORAGE_KEY_V4);
+      if (savedV4) {
+        const parsed = JSON.parse(savedV4);
+        const hydrated = normalizeAndHydrateParams(parsed);
+        safeStorage.setItem(STORAGE_KEY, JSON.stringify(hydrated));
+        safeStorage.removeItem(LEGACY_STORAGE_KEY_V4);
+        return hydrated;
       }
+    } catch {
+      // ignore
     }
 
-    // Attempt migration from v2 if available
-    const oldV2 = safeStorage.getItem('hmi-tray-designer-oneui8-v2');
-    if (oldV2) {
-      try {
-        const candidateOld = JSON.parse(oldV2);
-        if (
-          candidateOld &&
-          typeof candidateOld === 'object' &&
-          typeof candidateOld.trayD === 'number' &&
-          Number.isFinite(candidateOld.trayD) &&
-          candidateOld.trayD > 0
-        ) {
-          safeStorage.removeItem('hmi-tray-designer-oneui8-v2');
-          const hydratedOld = normalizeAndHydrateParams(candidateOld);
-          if (validateRecipeParams(hydratedOld).ok) {
-            return hydratedOld;
-          }
-        }
-      } catch {
-        safeStorage.removeItem('hmi-tray-designer-oneui8-v2');
+    // 3. Migration fallback: check legacy v3 schema
+    try {
+      const savedV3 = safeStorage.getItem(LEGACY_STORAGE_KEY_V3);
+      if (savedV3) {
+        const parsed = JSON.parse(savedV3);
+        const hydrated = normalizeAndHydrateParams(parsed);
+        safeStorage.setItem(STORAGE_KEY, JSON.stringify(hydrated));
+        safeStorage.removeItem(LEGACY_STORAGE_KEY_V3);
+        return hydrated;
       }
+    } catch {
+      // ignore
     }
-  } catch (e) {
-    console.warn('Failed to parse saved parameters, resetting to default:', e);
-  }
-  return DEFAULT_PARAMS;
-}
 
-export function useTrayParams(onParamsChange?: () => void) {
-  const [params, setParams] = useState<TrayParams>(loadInitialParams);
+    // 4. Migration fallback: check legacy v2 schema
+    try {
+      const savedV2 = safeStorage.getItem(LEGACY_STORAGE_KEY_V2);
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
+        const hydrated = normalizeAndHydrateParams(parsed);
+        safeStorage.setItem(STORAGE_KEY, JSON.stringify(hydrated));
+        safeStorage.removeItem(LEGACY_STORAGE_KEY_V2);
+        return hydrated;
+      }
+    } catch {
+      // ignore
+    }
 
-  // Synchronize params to localStorage with schema version
+    return normalizeAndHydrateParams(DEFAULT_PARAMS);
+  });
+
+  // Synchronize params to safeStorage with schema version
   useEffect(() => {
-    const payload: StoredParametersPayload = {
-      version: STORAGE_SCHEMA_VERSION,
-      params,
-    };
-    safeStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(params));
   }, [params]);
 
-  const updateParams = useCallback(
-    (updated: Partial<TrayParams>) => {
-      setParams((prev) => {
-        const next = { ...prev, ...updated };
-        if (updated.tableMode === 'continue') {
-          next.addAngle = 0;
+  const updateParams = useCallback((updated: Partial<TrayParams>) => {
+    setParams((prev) => {
+      const next = normalizeAndHydrateParams({ ...prev, ...updated });
+      // If tableMode is 'continue' and mode is 'custom', addAngle on layer 0 must be 0
+      if (next.tableMode === 'continue' && next.mode === 'custom' && next.layerCustoms && next.layerCustoms.length > 0) {
+        if (next.layerCustoms[0].addAngle !== 0) {
+          next.layerCustoms[0] = { ...next.layerCustoms[0], addAngle: 0 };
         }
-        return next;
-      });
-      if (onParamsChange) {
-        onParamsChange();
       }
-    },
-    [onParamsChange]
-  );
+      return next;
+    });
+  }, []);
 
   const resetDefaultParams = useCallback(() => {
-    setParams(DEFAULT_PARAMS);
-    if (onParamsChange) {
-      onParamsChange();
-    }
-  }, [onParamsChange]);
+    setParams(normalizeAndHydrateParams(DEFAULT_PARAMS));
+  }, []);
 
   const autoCalculateSpacing = useCallback(
     (
       onSuccess?: (msg: string) => void,
       onError?: (msg: string) => void,
-      lang: 'ar' | 'fr' = 'ar'
+      lang: Language = 'ar'
     ) => {
       if (params.layers <= 1) {
         if (onError) {
-          onError(
-            lang === 'ar'
-              ? 'طبقة واحدة فقط — لا حاجة لحساب التباعد.'
-              : "Une seule couche — pas d'espacement nécessaire."
-          );
+          onError(translations[lang].singleLayerNoSpacing);
         }
         return false;
       }
@@ -159,11 +120,7 @@ export function useTrayParams(onParamsChange?: () => void) {
       });
 
       if (onSuccess) {
-        onSuccess(
-          lang === 'ar'
-            ? 'تم حساب وتعديل خطوة التباعد الشعاعي بنجاح.'
-            : "Espacement radial calculé et ajusté avec succès."
-        );
+        onSuccess(translations[lang].spacingAutoCalculated);
       }
       return true;
     },
@@ -172,6 +129,7 @@ export function useTrayParams(onParamsChange?: () => void) {
 
   return {
     params,
+    setParams,
     updateParams,
     resetDefaultParams,
     autoCalculateSpacing,

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, Smartphone, X, CheckCircle2, Info } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
-import { Language } from '../core/i18n';
+import { Language, translations } from '../core/i18n';
 
 interface PWAInstallButtonProps {
   lang?: Language;
@@ -11,12 +11,13 @@ interface PWAInstallButtonProps {
 export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'ar' }) => {
   const { install, installStatus } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
+  const t = translations[lang];
 
   if (installStatus === 'installed') {
     return (
       <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl shadow-2xs shrink-0 select-none">
         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-        <span>{lang === 'ar' ? 'التطبيق مثبت' : 'Installé'}</span>
+        <span>{t.pwaInstalledBadge}</span>
       </div>
     );
   }
@@ -34,16 +35,10 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'ar' 
 
   const statusNote =
     installStatus === 'ios'
-      ? lang === 'ar'
-        ? 'أجهزة iPhone / iPad تتطلب التثبيت اليدوي من قائمة مشاركة Safari:'
-        : 'Sur iPhone / iPad, l’installation se fait manuellement via le menu Partager de Safari :'
+      ? t.pwaStatusIos
       : installStatus === 'unsupported'
-      ? lang === 'ar'
-        ? 'هذا المتصفح لا يدعم التثبيت التلقائي المباشر. يمكنك تثبيت التطبيق يدوياً من قائمة المتصفح:'
-        : 'Ce navigateur ne prend pas en charge l’installation directe. Installez manuellement via le menu :'
-      : lang === 'ar'
-      ? 'نافذة التثبيت التلقائي غير متاحة حالياً (أو داخل معاينة). اتبع الخطوات اليدوية التالية:'
-      : 'L’invite automatique n’est pas disponible actuellement. Suivez ces étapes manuelles :';
+      ? t.pwaStatusUnsupported
+      : t.pwaStatusManual;
 
   const modal = (
     <div
@@ -58,12 +53,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'ar' 
               <Smartphone className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[#0f172a]">
-                {lang === 'ar' ? 'دليل تثبيت TRIVIUM120° يدوياً' : 'Guide d’installation manuelle PWA'}
-              </h3>
-              <p className="text-[10px] text-[#64748b]">
-                {lang === 'ar' ? 'إضافة التطبيق إلى الشاشة الرئيسية' : 'Ajouter à l’écran d’accueil'}
-              </p>
+              <h3 className="text-sm font-bold text-[#0f172a]">{t.pwaGuideTitle}</h3>
+              <p className="text-[10px] text-[#64748b]">{t.pwaGuideSubtitle}</p>
             </div>
           </div>
           <button
@@ -85,39 +76,23 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'ar' 
           {installStatus === 'ios' ? (
             <div className="space-y-2">
               <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 space-y-0.5">
-                <p className="font-semibold">
-                  {lang === 'ar' ? '1. اضغط زر المشاركة (Share ⎋)' : '1. Appuyez sur Partager (⎋)'}
-                </p>
-                <p className="text-[11px] text-blue-700">
-                  {lang === 'ar' ? 'في شريط متصفح Safari أسفل الشاشة.' : 'Dans la barre du navigateur Safari.'}
-                </p>
+                <p className="font-semibold">{t.pwaSafariStep1}</p>
+                <p className="text-[11px] text-blue-700">{t.pwaSafariStep1Desc}</p>
               </div>
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 space-y-0.5">
-                <p className="font-semibold">
-                  {lang === 'ar' ? '2. اختر "إضافة إلى الشاشة الرئيسية"' : '2. "Sur l\'écran d\'accueil" (⊞)'}
-                </p>
-                <p className="text-[11px] text-slate-600">
-                  {lang === 'ar' ? 'مرر للأسفل في القائمة ثم اضغط إضافة (Add).' : 'Faites défiler vers le bas puis appuyez sur Ajouter.'}
-                </p>
+                <p className="font-semibold">{t.pwaSafariStep2}</p>
+                <p className="text-[11px] text-slate-600">{t.pwaSafariStep2Desc}</p>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
               <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 space-y-0.5">
-                <p className="font-semibold">
-                  {lang === 'ar' ? '1. افتح قائمة المتصفح (النقاط الثلاث ⁝)' : '1. Ouvrez le menu du navigateur (⁝)'}
-                </p>
-                <p className="text-[11px] text-blue-700">
-                  {lang === 'ar' ? 'في أعلى شريط عنوان المتصفح (Chrome / Edge).' : 'En haut à droite de Chrome ou Edge.'}
-                </p>
+                <p className="font-semibold">{t.pwaChromeStep1}</p>
+                <p className="text-[11px] text-blue-700">{t.pwaChromeStep1Desc}</p>
               </div>
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 space-y-0.5">
-                <p className="font-semibold">
-                  {lang === 'ar' ? '2. اختر "تثبيت التطبيق" أو "إضافة للشاشة الرئيسية"' : '2. "Installer l\'application" ou "Ajouter à l\'écran d\'accueil"'}
-                </p>
-                <p className="text-[11px] text-slate-600">
-                  {lang === 'ar' ? 'سيتم إنشاء أيقونة مستقلة للتطبيق على جهازك.' : 'Une icône dédiée sera créée sur votre appareil.'}
-                </p>
+                <p className="font-semibold">{t.pwaChromeStep2}</p>
+                <p className="text-[11px] text-slate-600">{t.pwaChromeStep2Desc}</p>
               </div>
             </div>
           )}
@@ -130,7 +105,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'ar' 
             onClick={() => setShowGuide(false)}
             className="w-full py-2 rounded-xl bg-[#2563eb] text-white text-xs font-bold hover:bg-[#1d4ed8] shadow-sm transition-all cursor-pointer"
           >
-            {lang === 'ar' ? 'إغلاق الدليل' : 'Fermer le guide'}
+            {t.pwaCloseGuide}
           </button>
         </div>
       </div>
@@ -143,25 +118,11 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'ar' 
         type="button"
         onClick={handleClick}
         className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
-        title={
-          installStatus === 'ready'
-            ? lang === 'ar'
-              ? 'تثبيت تطبيق TRIVIUM120° مباشرة (PWA)'
-              : 'Installer TRIVIUM120° (PWA)'
-            : lang === 'ar'
-            ? 'طريقة تثبيت التطبيق على الجهاز'
-            : 'Guide d’installation PWA'
-        }
+        title={installStatus === 'ready' ? t.pwaInstallDirectTitle : t.pwaInstallGuideTitle}
       >
         <Download className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">
-          {installStatus === 'ready'
-            ? lang === 'ar'
-              ? 'تثبيت التطبيق'
-              : 'Installer'
-            : lang === 'ar'
-            ? 'تثبيت (دليل)'
-            : 'Installer (Guide)'}
+          {installStatus === 'ready' ? t.pwaInstallDirectBtn : t.pwaInstallGuideBtn}
         </span>
       </button>
 

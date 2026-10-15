@@ -58,7 +58,7 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 sm:gap-3 max-w-5xl mx-auto w-full h-full min-h-0 select-none overflow-hidden" dir="ltr">
+    <div className="flex flex-col gap-2 sm:gap-3 max-w-5xl mx-auto w-full h-full min-h-0 select-none overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <ConfirmModal
         isOpen={!!presetToDelete}
         onClose={() => setPresetToDelete(null)}
@@ -66,12 +66,8 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
           if (presetToDelete) onDeletePreset(presetToDelete);
           setPresetToDelete(null);
         }}
-        title={lang === 'ar' ? 'تأكيد الحذف' : 'Confirmer la suppression'}
-        message={
-          lang === 'ar'
-            ? 'هل أنت متأكد من حذف هذا القالب؟ لا يمكن التراجع عن هذا الإجراء.'
-            : 'Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.'
-        }
+        title={t.confirmDeleteTitle}
+        message={t.deleteConfirmDesc}
         t={t}
         lang={lang}
       />
@@ -107,12 +103,8 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
               type="button"
               onClick={onOpenImportModal}
               className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 border border-blue-500/30"
-              title={
-                lang === 'ar'
-                  ? 'استيراد قالب من ذاكرة الهاتف (JSON / CSV / QR)'
-                  : 'Importer un modèle depuis le téléphone'
-              }
-              aria-label={lang === 'ar' ? 'استيراد قالب' : 'Importer un modèle'}
+              title={t.importModalTitle}
+              aria-label={t.importModelAria}
             >
               <Upload className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
@@ -128,7 +120,7 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
             <h3 className="text-xs sm:text-sm font-bold text-[#0f172a]">{t.presetsTitle}</h3>
           </div>
           <span className="text-[10px] sm:text-[11px] font-mono font-medium text-[#64748b] bg-[#f1f5f9] px-2 py-0.5 rounded-full border border-[#e2e8f0]">
-            {allPresets.length} {lang === 'ar' ? 'قوالب متاحة' : 'modèles'}
+            {allPresets.length} {t.availablePresetsCount}
           </span>
         </div>
 
@@ -186,7 +178,7 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
                     {isSelected && (
                       <span className="flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.5 rounded-full shadow-2xs shrink-0">
                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                        <span>{lang === 'ar' ? 'النشطة' : 'Active'}</span>
+                        <span>{t.activeBadge}</span>
                       </span>
                     )}
                   </div>
@@ -212,7 +204,7 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
                         type="button"
                         onClick={(e) => handleExportSinglePreset(preset, e)}
                         className="p-1 rounded-lg text-xs font-bold transition-all cursor-pointer bg-blue-50 hover:bg-blue-100 text-[#2563eb] border border-blue-200 active:scale-95 shadow-2xs"
-                        title={lang === 'ar' ? 'تصدير هذا القالب (JSON)' : 'Exporter (JSON)'}
+                        title={t.exportJsonTooltip}
                       >
                         <Download className="w-3 h-3" />
                       </button>
@@ -226,7 +218,7 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
                             setPresetToDelete(preset.id);
                           }}
                           className="p-1 rounded-lg text-xs font-bold transition-all cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 active:scale-95 shadow-2xs"
-                          title={lang === 'ar' ? 'حذف القالب' : 'Supprimer'}
+                          title={t.deletePresetTooltip}
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -248,12 +240,12 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
                         {isSelected ? (
                           <>
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
-                            <span>{lang === 'ar' ? 'مطبقة' : 'Active'}</span>
+                            <span>{t.activeBadge}</span>
                           </>
                         ) : (
                           <>
                             <Bookmark className="w-2.5 h-2.5" />
-                            <span>{lang === 'ar' ? 'تطبيق' : 'Choisir'}</span>
+                            <span>{t.applyBtn}</span>
                           </>
                         )}
                       </button>

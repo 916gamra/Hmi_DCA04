@@ -5,6 +5,7 @@ import { renderCanvas, computeViewport } from '../core/render';
 import { HEADS, LAYER_COLORS, DEG } from '../core/constants';
 import { fmt, clamp } from '../core/model';
 import { Translations, Language, translations } from '../core/i18n';
+import { safeStorage } from '../core/safeStorage';
 
 interface CanvasStageProps {
   model: TrayModel;
@@ -293,7 +294,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
               type="button"
               onClick={() => handleZoom(0.8)}
               className="w-7.5 h-7.5 rounded-lg bg-white hover:bg-[#e2e8f0] flex items-center justify-center text-[#475569] shadow-xs transition-all cursor-pointer"
-              title={lang === 'ar' ? 'تصغير' : 'Zoom arrière'}
+              title={t.zoomOut}
               aria-label="Zoom Out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
@@ -303,7 +304,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
               type="button"
               onClick={handleResetFit}
               className="w-7.5 h-7.5 rounded-lg bg-white hover:bg-[#e2e8f0] flex items-center justify-center text-[#475569] shadow-xs transition-all cursor-pointer"
-              title={lang === 'ar' ? 'ملاءمة للشاشة (100%)' : "Ajuster à l'écran (100%)"}
+              title={t.zoomFit}
               aria-label="Fit to Screen"
             >
               <Maximize2 className="w-3.5 h-3.5" />
@@ -313,7 +314,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
               type="button"
               onClick={() => handleZoom(1.25)}
               className="w-7.5 h-7.5 rounded-lg bg-white hover:bg-[#e2e8f0] flex items-center justify-center text-[#475569] shadow-xs transition-all cursor-pointer"
-              title={lang === 'ar' ? 'تكبير' : 'Zoom avant'}
+              title={t.zoomIn}
               aria-label="Zoom In"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -325,11 +326,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             type="button"
             onClick={() => {
               const nextTheme: CanvasTheme = (options.theme || 'dark') === 'dark' ? 'light' : 'dark';
-              try {
-                localStorage.setItem('hmi-tray-canvas-theme', nextTheme);
-              } catch {
-                // ignore storage errors
-              }
+              safeStorage.setItem('hmi-tray-canvas-theme', nextTheme);
               onChangeOptions({ ...options, theme: nextTheme });
             }}
             className="p-2 rounded-2xl bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1]/60 text-[#475569] transition-all cursor-pointer select-none active:scale-95 shadow-2xs flex items-center justify-center"
@@ -343,7 +340,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             {(options.theme || 'dark') === 'dark' ? (
               <Moon className="w-4 h-4 text-sky-500 hover:text-sky-400 transition-colors" />
             ) : (
-              <Sun className="w-4 h-4 text-amber-500 hover:text-amber-600 transition-colors" />
+              <Sun className="w-4 h-4 text-amber-500 hover:text-amber-400 transition-colors" />
             )}
           </button>
 
@@ -353,8 +350,8 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
               type="button"
               onClick={onOpenMathModal}
               className="p-2 rounded-2xl bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1]/60 text-[#2563eb] transition-all cursor-pointer select-none active:scale-95 shadow-2xs flex items-center justify-center"
-              title={lang === 'ar' ? 'توثيق المنطق الرياضي وحسابات التباعد' : 'Documentation logique mathématique'}
-              aria-label={lang === 'ar' ? 'توثيق المنطق الرياضي' : 'Documentation mathématique'}
+              title={t.docMathTooltip}
+              aria-label={t.docMathAria}
             >
               <Calculator className="w-4 h-4" />
             </button>
@@ -365,7 +362,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
         <div className="flex items-center gap-2 min-w-0 justify-end">
           <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#334155] select-none truncate">
             <span className="w-2 h-2 rounded-full bg-[#2563eb] inline-block animate-pulse shrink-0" />
-            <span className="truncate">{lang === 'ar' ? 'المعاينة الهندسية 2D' : 'Aperçu Géométrique 2D'}</span>
+            <span className="truncate">{t.canvas2dPreview}</span>
           </div>
 
           {/* Mobile Parameters Drawer Switcher Button (visible on mobile only) */}
@@ -378,21 +375,17 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
                   ? 'bg-emerald-600 border-emerald-500 text-white hover:bg-emerald-700 shadow-emerald-600/25'
                   : 'bg-[#2563eb] border-[#1d4ed8] text-white hover:bg-[#1d4ed8] shadow-[#2563eb]/25'
               }`}
-              title={
-                isDrawerOpen
-                  ? (lang === 'ar' ? 'عرض النتائج والمحاكاة' : 'Voir Résultats & Simulation')
-                  : (lang === 'ar' ? 'ضبط معاملات الصينية' : 'Régler les paramètres')
-              }
+              title={isDrawerOpen ? t.viewResultsSim : t.adjustTrayParams}
             >
               {isDrawerOpen ? (
                 <>
                   <BarChart3 className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? 'نتائج' : 'Résultats'}</span>
+                  <span>{t.btnResultsShort}</span>
                 </>
               ) : (
                 <>
                   <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? 'ضبط' : 'Régler'}</span>
+                  <span>{t.btnAdjustShort}</span>
                 </>
               )}
             </button>
@@ -432,32 +425,32 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             dir="ltr"
           >
             <div className="font-bold flex items-center justify-between gap-3 text-[#2563eb] border-b border-[#f1f5f9] pb-1 mb-1">
-              <span>{lang === 'ar' ? `الطبقة L${hoverPoint.layer + 1}` : `Couche L${hoverPoint.layer + 1}`}</span>
+              <span>{t.tableLayer} L{hoverPoint.layer + 1}</span>
               <span className="font-mono text-[11px] text-[#475569]">
                 #{hoverPoint.k + 1}
               </span>
             </div>
             <div className="text-[11px] text-[#64748b]">
               <div>
-                {lang === 'ar' ? 'الرأس:' : 'Tête :'} {' '}
+                {t.hoverHead} {' '}
                 <strong className="text-[#0f172a] font-mono">
                   {HEADS[hoverPoint.head].id} ({HEADS[hoverPoint.head].angle}°)
                 </strong>
               </div>
               <div>
-                {lang === 'ar' ? 'الزاوية:' : 'Angle :'} {' '}
+                {t.hoverAngle} {' '}
                 <strong className="text-[#0f172a] font-mono">
                   {fmt(hoverPoint.a, 2)}°
                 </strong>
               </div>
               <div>
-                {lang === 'ar' ? 'الإحداثيات:' : 'Coord :'} X={fmt(hoverPoint.x, 2)} , Y={fmt(hoverPoint.y, 2)} mm
+                {t.hoverCoords} X={fmt(hoverPoint.x, 2)} , Y={fmt(hoverPoint.y, 2)} mm
               </div>
               <div className="mt-1 pt-1 border-t border-[#f1f5f9]">
                 {state && hoverPoint.j < state.counts[hoverPoint.layer] ? (
-                  <span className="text-[#059669] font-bold">✔ {lang === 'ar' ? 'تم الحفر' : 'Percé'}</span>
+                  <span className="text-[#059669] font-bold">✔ {t.drilledStatus}</span>
                 ) : (
-                  <span className="text-amber-600 font-bold">⏳ {lang === 'ar' ? 'بانتظار الحفر' : 'En attente'}</span>
+                  <span className="text-amber-600 font-bold">⏳ {t.pendingDrillStatus}</span>
                 )}
               </div>
             </div>
@@ -577,7 +570,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
         <span className="flex items-center gap-1.5 font-medium text-red-600">
           <span className="w-2.5 h-2.5 rounded-full border-2 border-red-500 inline-block" />
-          <span>{lang === 'ar' ? 'تداخل محظور' : 'Collision interdite'}</span>
+          <span>{t.forbiddenCollision}</span>
         </span>
       </div>
     </div>
