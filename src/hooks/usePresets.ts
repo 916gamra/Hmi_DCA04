@@ -1,25 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RecipePreset, TrayParams } from '../types';
+import { safeStorage } from '../core/safeStorage';
 
 const CUSTOM_PRESETS_STORAGE_KEY = 'hmi-tray-custom-presets';
 
 export function usePresets(currentParams: TrayParams) {
   const [customPresets, setCustomPresets] = useState<RecipePreset[]>(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_PRESETS_STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to load custom presets from localStorage:', e);
-    }
-    return [];
+    return safeStorage.getJSON<RecipePreset[]>(CUSTOM_PRESETS_STORAGE_KEY, []);
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(CUSTOM_PRESETS_STORAGE_KEY, JSON.stringify(customPresets));
-    } catch (e) {
-      console.warn('Failed to save custom presets:', e);
-    }
+    safeStorage.setJSON(CUSTOM_PRESETS_STORAGE_KEY, customPresets);
   }, [customPresets]);
 
   const saveCustomPreset = useCallback(

@@ -3,6 +3,7 @@ import { ViewOptions, RecipePreset, TrayParams } from './types';
 import { buildModel } from './core/model';
 import { buildTimeline } from './core/timeline';
 import { normalizeAndHydrateParams } from './core/recipe';
+import { safeStorage } from './core/safeStorage';
 import { Header } from './components/Header';
 import { ParametersPanel } from './components/ParametersPanel';
 import { ManualModePage } from './components/ManualModePage';
@@ -12,8 +13,6 @@ import { QrCodeModal } from './components/QrCodeModal';
 import { QrScannerModal } from './components/QrScannerModal';
 import { Toast } from './components/Toast';
 import { AutomaticSimulatorSection, CanvasControls, Results } from './components/AutomaticSimulatorSection';
-import { CanvasStage } from './components/CanvasStage';
-import { SimulationControls } from './components/SimulationControls';
 import { SaveArticleModal } from './components/SaveArticleModal';
 import { ImportChoiceModal } from './components/ImportChoiceModal';
 import { RecipePreviewModal } from './components/RecipePreviewModal';
@@ -26,66 +25,47 @@ import { useTrayParams, STORAGE_KEY } from './hooks/useTrayParams';
 import { useSimulation } from './hooks/useSimulation';
 import { usePresets } from './hooks/usePresets';
 import { useNotifications } from './hooks/useNotifications';
-import { LayoutGrid, SlidersHorizontal, BarChart3 } from 'lucide-react';
+import { useToast } from './hooks/useToast';
+import { useAppModals } from './hooks/useAppModals';
+import { SlidersHorizontal, BarChart3 } from 'lucide-react';
 
 const LANG_STORAGE_KEY = 'hmi-tray-lang';
 
 export default function App() {
-
   // 1. Language State (AR & FR)
   const [lang, setLang] = useState<Language>(() => {
-    try {
-      const savedLang = localStorage.getItem(LANG_STORAGE_KEY);
-      if (savedLang === 'fr' || savedLang === 'ar') return savedLang;
-    } catch (e) {
-      console.warn('Failed to read lang preference:', e);
-    }
+    const savedLang = safeStorage.getItem(LANG_STORAGE_KEY);
+    if (savedLang === 'fr' || savedLang === 'ar') return savedLang;
     return 'ar';
   });
 
   const t = translations[lang];
 
   useEffect(() => {
-    try {
-      localStorage.setItem(LANG_STORAGE_KEY, lang);
-    } catch (e) {
-      console.warn('Failed to save lang preference:', e);
-    }
+    safeStorage.setItem(LANG_STORAGE_KEY, lang);
     document.documentElement.lang = lang;
-    document.documentElement.dir = 'ltr';
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
 
   const toggleLanguage = () => {
     setLang((prev) => (prev === 'ar' ? 'fr' : 'ar'));
   };
 
-  // 2. Navigation State (3 bottom tabs: auto | manual | article) synced with URL hash (#auto, #manual, #article)
+  // 2. Navigation State (3 bottom tabs)
   const [mainTab, setMainTab] = useState<MainTab>(() => {
     const validTabs: MainTab[] = ['auto', 'manual', 'article'];
-    try {
-      const hash = window.location.hash.replace(/^#/, '') as MainTab;
-      if (validTabs.includes(hash)) {
-        return hash;
-      }
-      const savedTab = localStorage.getItem('hmi-tray-tab') as MainTab;
-      if (validTabs.includes(savedTab)) {
-        return savedTab;
-      }
-    } catch (e) {
-      console.warn('Failed to read initial tab preference:', e);
-    }
+    const hash = window.location.hash.replace(/^#/, '') as MainTab;
+    if (validTabs.includes(hash)) return hash;
+    const savedTab = safeStorage.getItem('hmi-tray-tab') as MainTab;
+    if (validTabs.includes(savedTab)) return savedTab;
     return 'auto';
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('hmi-tray-tab', mainTab);
-      const targetHash = `#${mainTab}`;
-      if (window.location.hash !== targetHash) {
-        window.history.replaceState(null, '', targetHash);
-      }
-    } catch (e) {
-      console.warn('Failed to save tab preference:', e);
+    safeStorage.setItem('hmi-tray-tab', mainTab);
+    const targetHash = `#${mainTab}`;
+    if (window.location.hash !== targetHash) {
+      window.history.replaceState(null, '', targetHash);
     }
   }, [mainTab]);
 
@@ -101,20 +81,10 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // 3. Toast Notifications State
-  const [toast, setToast] = useState<{ message: string | null; type: 'success' | 'error' }>({
-    message: null,
-    type: 'success',
-  });
+  // 3. Toast Notifications State via useToast hook
+  const { toast, showToast } = useToast();
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast({ message: null, type: 'success' });
-    }, 2800);
-  }, []);
-
-  // 4. Custom Hook: Tray Parameters Management (with Versioned Storage)
+  // 4. Custom Hook: Tray Parameters Management
   const {
     params,
     updateParams,
@@ -139,30 +109,22 @@ export default function App() {
     const status = await toggleNotifications(lang);
     if (status === 'enabled') {
       showToast(
-        lang === 'ar'
-          ? 'تم تفعيل إشعارات النظام (PWA Notifications)'
-          : 'Notifications PWA activées',
+        lang === 'ar' ? 'تم تفعيل إشعارات النظام (PWA Notifications)' : 'Notifications PWA activées',
         'success'
       );
     } else if (status === 'disabled') {
       showToast(
-        lang === 'ar'
-          ? 'تم إيقاف إشعارات النظام'
-          : 'Notifications PWA désactivées',
+        lang === 'ar' ? 'تم إيقاف إشعارات النظام' : 'Notifications PWA désactivées',
         'success'
       );
     } else if (status === 'denied') {
       showToast(
-        lang === 'ar'
-          ? 'يرجى السماح بالإشعارات من إعدادات المتصفح'
-          : 'Veuillez autoriser les notifications dans le navigateur',
+        lang === 'ar' ? 'يرجى السماح بالإشعارات من إعدادات المتصفح' : 'Veuillez autoriser les notifications dans le navigateur',
         'error'
       );
     } else {
       showToast(
-        lang === 'ar'
-          ? 'الإشعارات غير مدعومة في هذا المتصفح'
-          : 'Notifications non prises en charge',
+        lang === 'ar' ? 'الإشعارات غير مدعومة في هذا المتصفح' : 'Notifications non prises en charge',
         'error'
       );
     }
@@ -205,17 +167,10 @@ export default function App() {
     deleteCustomPreset,
   } = usePresets(params);
 
-  // 8. View Options & Modals State
+  // 8. View Options & Modals State via useAppModals hook
   const [viewOptions, setViewOptions] = useState<ViewOptions>(() => {
-    let savedTheme: 'light' | 'dark' = 'dark';
-    try {
-      const stored = localStorage.getItem('hmi-tray-canvas-theme');
-      if (stored === 'light' || stored === 'dark') {
-        savedTheme = stored;
-      }
-    } catch (e) {
-      console.warn('Failed to read canvas theme preference:', e);
-    }
+    const stored = safeStorage.getItem('hmi-tray-canvas-theme');
+    const savedTheme: 'light' | 'dark' = stored === 'light' || stored === 'dark' ? stored : 'dark';
     return {
       sectors: true,
       heads: false,
@@ -228,31 +183,36 @@ export default function App() {
 
   useEffect(() => {
     if (viewOptions.theme) {
-      try {
-        localStorage.setItem('hmi-tray-canvas-theme', viewOptions.theme);
-      } catch (e) {
-        console.warn('Failed to save canvas theme preference:', e);
-      }
+      safeStorage.setItem('hmi-tray-canvas-theme', viewOptions.theme);
     }
   }, [viewOptions.theme]);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  const {
+    showSplash,
+    setShowSplash,
+    isMobileDrawerOpen,
+    setIsMobileDrawerOpen,
+    isSaveModalOpen,
+    setIsSaveModalOpen,
+    isTechModalOpen,
+    setIsTechModalOpen,
+    isMathModalOpen,
+    setIsMathModalOpen,
+    isQrOpen,
+    setIsQrOpen,
+    isQrScannerOpen,
+    setIsQrScannerOpen,
+    isImportChoiceOpen,
+    setIsImportChoiceOpen,
+    previewRecipe,
+    setPreviewRecipe,
+    pendingSavePresetParams,
+    setPendingSavePresetParams,
+  } = useAppModals();
 
   useEffect(() => {
     setIsMobileDrawerOpen(false);
-  }, [mainTab]);
-
-  const [isQrOpen, setIsQrOpen] = useState(false);
-  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [isImportChoiceOpen, setIsImportChoiceOpen] = useState(false);
-  const [isTechModalOpen, setIsTechModalOpen] = useState(false);
-  const [isMathModalOpen, setIsMathModalOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
-  const [previewRecipe, setPreviewRecipe] = useState<{
-    params: TrayParams;
-    sourceName: string;
-  } | null>(null);
-  const [pendingSavePresetParams, setPendingSavePresetParams] = useState<TrayParams | null>(null);
+  }, [mainTab, setIsMobileDrawerOpen]);
 
   // Handlers
   const handleUpdateParams = (updated: Partial<typeof params>) => {
@@ -283,9 +243,8 @@ export default function App() {
   };
 
   const handleResetDefault = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    safeStorage.removeItem(STORAGE_KEY);
     resetDefaultParams();
-    resetSim();
     showToast(
       lang === 'ar'
         ? 'تمت استعادة الإعدادات المصنعية الافتراضية'
@@ -326,7 +285,7 @@ export default function App() {
     >
       {showSplash && <SplashScreen onEnter={() => setShowSplash(false)} lang={lang} />}
 
-      {/* 1. Header (Always LTR layout as requested, respecting mobile notch safe-area) */}
+      {/* 1. Header */}
       <Header
         model={model}
         lang={lang}
@@ -347,12 +306,11 @@ export default function App() {
             : 'overflow-y-auto overscroll-contain p-3 sm:p-4 md:p-6 pb-6'
         }`}
       >
-        {/* TAB 1: AUTOMATIC GUIDE (المحاكي الآلي وتصميم الصينية) */}
+        {/* TAB 1: AUTOMATIC GUIDE */}
         {mainTab === 'auto' && (
           <div className="flex-1 min-h-0 flex flex-col lg:block max-w-[1600px] w-full mx-auto">
-            {/* Mobile View: Fixed Canvas + Simulation Controls at top, Responsive Scrollable KPI Container below */}
+            {/* Mobile View */}
             <div className="lg:hidden flex-1 min-h-0 flex flex-col gap-2 relative">
-              {/* 1. Fixed Top Unit: Canvas + Simulation Controls (Never scrolls or shifts) */}
               <div className="flex-none flex flex-col gap-2">
                 <CanvasControls
                   model={model}
@@ -384,7 +342,6 @@ export default function App() {
                 />
               </div>
 
-              {/* Scrim Overlay below sticky unit when drawer is open */}
               {isMobileDrawerOpen && (
                 <div
                   className="fixed inset-0 z-35 bg-black/25 backdrop-blur-[1px] animate-in fade-in duration-200"
@@ -392,13 +349,11 @@ export default function App() {
                 />
               )}
 
-              {/* Mobile Parameters Bottom Sheet Drawer (slides from bottom, does not cover canvas/controls) */}
               {isMobileDrawerOpen && (
                 <div
                   className="fixed inset-x-0 bottom-[64px] z-40 max-h-[74dvh] h-[68dvh] sm:h-auto sm:max-h-[76dvh] flex flex-col bg-white rounded-t-3xl shadow-[0_-12px_44px_rgba(15,23,42,0.22)] border-t border-[#cbd5e1] animate-in slide-in-from-bottom duration-300"
                   dir="ltr"
                 >
-                  {/* Drawer Drag Handle & Bar */}
                   <div className="flex-none pt-2.5 pb-2.5 px-4 sm:px-5 border-b border-[#f1f5f9] flex flex-col gap-2 bg-gradient-to-b from-slate-50 to-white rounded-t-3xl">
                     <div
                       className="w-12 h-1.5 bg-slate-300 hover:bg-slate-400 rounded-full mx-auto cursor-pointer transition-colors"
@@ -431,7 +386,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Scrollable Accordion Parameters with generous bottom padding for breathing room */}
                   <div className="flex-1 overflow-y-auto px-3.5 py-3.5 sm:px-5 sm:py-4 pb-32 sm:pb-28 overscroll-contain">
                     <ParametersPanel
                       params={params}
@@ -445,7 +399,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* 2. Responsive KPI Container: Fixed position below controls, fills remaining vertical space down to bottom nav bar, internal scroll */}
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-0.5 pb-2">
                 <Results
                   model={model}
@@ -518,17 +471,17 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: MANUAL MODE (التحكم اليدوي ومحاكاة محاور الآلة) */}
+        {/* TAB 2: MANUAL MODE */}
         {mainTab === 'manual' && (
           <ManualModePage
             model={model}
             t={t}
             lang={lang}
-            onShowToast={showToast}
+            onShowToast={(msg) => showToast(msg, 'success')}
           />
         )}
 
-        {/* TAB 3: ARTICLE & RECIPES (قائمة الوصفات وشاشات الآلة TouchWin) */}
+        {/* TAB 3: ARTICLE & RECIPES */}
         {mainTab === 'article' && (
           <ArticleRecipesPage
             params={params}
@@ -544,11 +497,10 @@ export default function App() {
         )}
       </main>
 
-      {/* 3. Docked Floating Bottom Navigation Bar (3 Tabs: Automatic Guide, Manual, Article) */}
+      {/* 3. Docked Floating Bottom Navigation Bar */}
       <BottomNavBar currentTab={mainTab} onChangeTab={setMainTab} t={t} />
 
       {/* 4. Modals & Notifications */}
-      {/* Import Choice Modal (JSON / CSV / QR Code) */}
       <ImportChoiceModal
         isOpen={isImportChoiceOpen}
         onClose={() => setIsImportChoiceOpen(false)}
@@ -558,7 +510,6 @@ export default function App() {
         lang={lang}
       />
 
-      {/* Recipe Preview Modal with interactive Canvas, controls and Save button */}
       {previewRecipe && (
         <RecipePreviewModal
           isOpen={!!previewRecipe}
@@ -624,11 +575,10 @@ export default function App() {
       />
 
       <Toast
-        message={toast.message}
-        type={toast.type}
+        message={toast.message || null}
+        type={toast.type === 'error' ? 'error' : 'success'}
       />
 
-      {/* Offline Connectivity Status Indicator */}
       <OfflineIndicator lang={lang} />
     </div>
   );
