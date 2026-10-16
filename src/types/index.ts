@@ -137,6 +137,7 @@ export interface ViewOptions {
   labels: boolean;
   dimensions?: boolean;
   theme?: CanvasTheme;
+  frameMode?: 'auto' | 'machine';
 }
 
 export interface RecipePreset {

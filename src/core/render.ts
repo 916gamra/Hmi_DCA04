@@ -417,7 +417,8 @@ export function renderCanvas(
   // 4. Head sectors (0°, 120°, 240°)
   if (options.sectors) {
     HEADS.forEach((hConfig) => {
-      const a0 = (hConfig.angle + theta) * DEG;
+      const isMachine = options.frameMode === 'machine';
+      const a0 = (hConfig.angle + (isMachine ? 0 : theta)) * DEG;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, Rp, a0, a0 + 120 * DEG);
@@ -477,7 +478,8 @@ export function renderCanvas(
     const layerColor = palette.layerColors[L.i % palette.layerColors.length];
 
     for (const q of L.pts) {
-      const [x, y] = transformPoint(q.x, q.y, theta);
+      const isMachine = options.frameMode === 'machine';
+      const [x, y] = transformPoint(q.x, q.y, isMachine ? 0 : theta);
       if (x < -30 || y < -30 || x > w + 30 || y > h + 30) continue;
 
       const isSkipped = q.fired === false;
