@@ -83,9 +83,7 @@ export const ExportFormatModal: React.FC<ExportFormatModalProps> = ({
   };
 
   const handleExportGCode = () => {
-    const gcodeStr = generateRecipeGCode(model, fullParams, {
-      name: presetName,
-    });
+    const gcodeStr = generateRecipeGCode(fullParams, model);
     downloadFile(`recipe_${cleanName}.gcode`, gcodeStr, 'text/plain;charset=utf-8');
     onClose();
   };

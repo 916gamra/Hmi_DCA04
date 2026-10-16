@@ -279,9 +279,8 @@ export default function App() {
             <ManualModePage
               model={model}
               t={t}
-              params={params}
-              onChangeParams={handleUpdateParams}
               lang={lang}
+              onShowToast={showToast}
             />
           )}
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import jsQR from 'jsqr';
 import { Camera, Upload, X, QrCode as QrIcon, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TrayParams } from '../types';
-import { Translations, Language } from '../core/i18n';
+import { Translations, Language, translations } from '../core/i18n';
 import { parseJsonRecipeWithErrors, formatRecipeErrorsList } from '../core/recipe';
 
 interface QrScannerModalProps {
@@ -22,8 +22,10 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   isOpen,
   onClose,
   onApplyRecipe,
+  t: propT,
   lang = 'ar',
 }) => {
+  const t = propT || translations[lang];
   const [mode, setMode] = useState<'idle' | 'camera' | 'upload'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);

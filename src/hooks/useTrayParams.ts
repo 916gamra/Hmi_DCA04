@@ -18,7 +18,7 @@ export function useTrayParams() {
       if (savedV5) {
         const parsed = JSON.parse(savedV5);
         const validated = validateRecipeParams(parsed);
-        if (validated.isValid) {
+        if (validated.ok) {
           return normalizeAndHydrateParams(parsed);
         }
       }
@@ -80,9 +80,9 @@ export function useTrayParams() {
     setParams((prev) => {
       const next = normalizeAndHydrateParams({ ...prev, ...updated });
       // If tableMode is 'continue' and mode is 'custom', addAngle on layer 0 must be 0
-      if (next.tableMode === 'continue' && next.mode === 'custom' && next.layerCustoms && next.layerCustoms.length > 0) {
-        if (next.layerCustoms[0].addAngle !== 0) {
-          next.layerCustoms[0] = { ...next.layerCustoms[0], addAngle: 0 };
+      if (next.tableMode === 'continue' && next.mode === 'custom' && next.custom && next.custom.length > 0) {
+        if (next.custom[0].stepAngle !== undefined && next.custom[0].stepAngle !== 0) {
+          next.custom[0] = { ...next.custom[0], stepAngle: 0 };
         }
       }
       return next;
