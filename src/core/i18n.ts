@@ -13,6 +13,7 @@ export interface Translations {
   // Bottom Navigation
   navAuto: string;
   navManual: string;
+  navSemiAuto: string;
   navArticle: string;
 
   // Parameters
@@ -341,6 +342,37 @@ export interface Translations {
   deleteConfirmDesc: string;
   exportJsonTooltip: string;
   deletePresetTooltip: string;
+
+  // Semi-Auto HMI Mode
+  semiAutoTitle: string;
+  semiAutoSubtitle: string;
+  thetaLabel: string;
+  radialLabel: string;
+  spindleLabel: string;
+  plungeLabel: string;
+  tableZLabel: string;
+  stepAngleLabel: string;
+  stepRadialLabel: string;
+  dwellLabel: string;
+  rotHzLabel: string;
+  expHzLabel: string;
+  rOuterMaxLabel: string;
+  btnTableMinus: string;
+  btnTablePlus: string;
+  btnRadialMinus: string;
+  btnRadialPlus: string;
+  btnRadialMax: string;
+  btnSpindleOff: string;
+  btnSpindleOn: string;
+  btnTableZDown: string;
+  btnTableZUp: string;
+  btnPlunge: string;
+  btnTableHome: string;
+  statusActive: string;
+  statusInactive: string;
+  statusUp: string;
+  statusDown: string;
+  hardwareSoonBadge: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -355,6 +387,7 @@ export const translations: Record<Language, Translations> = {
 
     navAuto: 'المحاكي الآلي',
     navManual: 'الوضع اليدوي',
+    navSemiAuto: 'شبه-تلقائي (Semi-Auto)',
     navArticle: 'الوصفات والـ Article',
 
     autoTitle: 'المحاكي الآلي وتصميم الصينية الموزعة',
@@ -671,6 +704,36 @@ export const translations: Record<Language, Translations> = {
     deleteConfirmDesc: 'هل أنت متأكد من رغبتك في حذف هذا القالب؟ لا يمكن التراجع عن هذا الإجراء.',
     exportJsonTooltip: 'تصدير هذا القالب (JSON)',
     deletePresetTooltip: 'حذف القالب',
+
+    semiAutoTitle: 'لوحة التحكم شبه التلقائية (Semi-Auto HMI)',
+    semiAutoSubtitle: 'محاكاة أزرار التحكم اليدوي ونظام التشغيل شبه التلقائي',
+    thetaLabel: 'زاوية الطاولة (θ)',
+    radialLabel: 'الموضع الشعاعي (r)',
+    spindleLabel: 'رؤوس التزيين (Spindle)',
+    plungeLabel: 'الغطس (Plunge / Push)',
+    tableZLabel: 'موضع الطاولة Z',
+    stepAngleLabel: 'خطوة الزاوية (°)',
+    stepRadialLabel: 'خطوة الشعاع (مم)',
+    dwellLabel: 'زمن الحفر / Dwell (ث)',
+    rotHzLabel: 'سرعة الدوران (Hz)',
+    expHzLabel: 'سرعة التمدد (Hz)',
+    rOuterMaxLabel: 'أقصى شعاع مسموح (mm)',
+    btnTableMinus: 'θ −',
+    btnTablePlus: 'θ +',
+    btnRadialMinus: 'r −',
+    btnRadialPlus: 'r +',
+    btnRadialMax: 'r → MAX',
+    btnSpindleOff: 'Spindle OFF',
+    btnSpindleOn: 'Spindle ON',
+    btnTableZDown: 'الطاولة نازلة (DOWN)',
+    btnTableZUp: 'الطاولة مرتفعة (UP)',
+    btnPlunge: 'ضغط حفر (PLUNGE / PUSH)',
+    btnTableHome: 'طاولة 0° (Home عتاد)',
+    statusActive: 'نشط',
+    statusInactive: 'متوقف',
+    statusUp: 'مرتفع',
+    statusDown: 'نازل',
+    hardwareSoonBadge: 'قريباً / عتاد',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -683,6 +746,7 @@ export const translations: Record<Language, Translations> = {
 
     navAuto: 'Guide Automatique',
     navManual: 'Manuel',
+    navSemiAuto: 'Semi-Auto',
     navArticle: 'Articles & Recettes',
 
     autoTitle: 'Simulateur Automatique & Design de Plateau',
@@ -999,5 +1063,35 @@ export const translations: Record<Language, Translations> = {
     deleteConfirmDesc: 'Êtes-vous sûr de vouloir supprimer ce modèle ? Cette action est irréversible.',
     exportJsonTooltip: 'Exporter (JSON)',
     deletePresetTooltip: 'Supprimer',
+
+    semiAutoTitle: 'Panneau de Contrôle Semi-Automatique',
+    semiAutoSubtitle: 'Simulation des boutons manuels & macro semi-automatique',
+    thetaLabel: 'Angle table (θ)',
+    radialLabel: 'Position radiale (r)',
+    spindleLabel: 'Broches (Spindle)',
+    plungeLabel: 'Plongée (Plunge / Push)',
+    tableZLabel: 'Table Z (Haut/Bas)',
+    stepAngleLabel: 'Pas angulaire (°)',
+    stepRadialLabel: 'Pas radial (mm)',
+    dwellLabel: 'Temps de dwell (s)',
+    rotHzLabel: 'Vitesse rot (Hz)',
+    expHzLabel: 'Vitesse exp (Hz)',
+    rOuterMaxLabel: 'Rayon max (mm)',
+    btnTableMinus: 'θ −',
+    btnTablePlus: 'θ +',
+    btnRadialMinus: 'r −',
+    btnRadialPlus: 'r +',
+    btnRadialMax: 'r → MAX',
+    btnSpindleOff: 'Broches OFF',
+    btnSpindleOn: 'Broches ON',
+    btnTableZDown: 'Table Basse (DOWN)',
+    btnTableZUp: 'Table Haute (UP)',
+    btnPlunge: 'Plongée (PLUNGE / PUSH)',
+    btnTableHome: 'Table 0° (Home)',
+    statusActive: 'Actif',
+    statusInactive: 'Inactif',
+    statusUp: 'Haut',
+    statusDown: 'Bas',
+    hardwareSoonBadge: 'Bientôt / Matériel',
   },
 };

@@ -6,6 +6,7 @@ import { normalizeAndHydrateParams } from './core/recipe';
 import { safeStorage } from './core/safeStorage';
 import { Header } from './components/Header';
 import { ManualModePage } from './components/ManualModePage';
+import { SemiAutomaticPage } from './components/SemiAutomaticPage';
 import { ArticleRecipesPage } from './components/ArticleRecipesPage';
 import { BottomNavBar, MainTab } from './components/BottomNavBar';
 import { AutoWorkspace } from './components/layout/AutoWorkspace';
@@ -41,9 +42,9 @@ export default function App() {
     setLang((prev) => (prev === 'ar' ? 'fr' : 'ar'));
   };
 
-  // 2. Navigation State (3 bottom tabs)
+  // 2. Navigation State (4 bottom tabs)
   const [mainTab, setMainTab] = useState<MainTab>(() => {
-    const validTabs: MainTab[] = ['auto', 'manual', 'article'];
+    const validTabs: MainTab[] = ['auto', 'manual', 'semiauto', 'article'];
     const hash = window.location.hash.replace(/^#/, '') as MainTab;
     if (validTabs.includes(hash)) return hash;
     const savedTab = safeStorage.getItem('hmi-tray-tab') as MainTab;
@@ -61,7 +62,7 @@ export default function App() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      const validTabs: MainTab[] = ['auto', 'manual', 'article'];
+      const validTabs: MainTab[] = ['auto', 'manual', 'semiauto', 'article'];
       const hash = window.location.hash.replace(/^#/, '') as MainTab;
       if (validTabs.includes(hash)) {
         setMainTab(hash);
@@ -280,6 +281,13 @@ export default function App() {
               t={t}
               params={params}
               onChangeParams={handleUpdateParams}
+              lang={lang}
+            />
+          )}
+
+          {mainTab === 'semiauto' && (
+            <SemiAutomaticPage
+              t={t}
               lang={lang}
             />
           )}
