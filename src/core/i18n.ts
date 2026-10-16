@@ -392,6 +392,11 @@ export interface Translations {
   spindleStopped: string;
   currentRadiusLabel: string;
   layerActiveLabel: string;
+  goToLayerRadiusBtn: string;
+  ghostHolesCount: string;
+  stepAngleIndexingLabel: string;
+  nPointsCircleLabel: string;
+  derivedSpacingBadge: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -772,6 +777,11 @@ export const translations: Record<Language, Translations> = {
     spindleStopped: 'متوقفة (OFF)',
     currentRadiusLabel: 'نصف القطر الحالي للرؤوس r (مم)',
     layerActiveLabel: 'الطبقة النشطة (Layer)',
+    goToLayerRadiusBtn: 'انتقال لنصف قطر الطبقة',
+    ghostHolesCount: 'أشباح الشبكة',
+    stepAngleIndexingLabel: 'خطوة فهرسة الطاولة (θ)',
+    nPointsCircleLabel: 'عدد نقاط الحلقة (n)',
+    derivedSpacingBadge: 'تباعد هندسي مشتق (s)',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -1150,5 +1160,10 @@ export const translations: Record<Language, Translations> = {
     spindleStopped: 'À l’arrêt (OFF)',
     currentRadiusLabel: 'Rayon actuel des têtes r (mm)',
     layerActiveLabel: 'Couche active (Layer)',
+    goToLayerRadiusBtn: 'Aller au rayon de la couche',
+    ghostHolesCount: 'Fantômes de grille',
+    stepAngleIndexingLabel: 'Pas d’indexation table (θ)',
+    nPointsCircleLabel: 'Points par cercle (n)',
+    derivedSpacingBadge: 'Espacement s calculé',
   },
 };

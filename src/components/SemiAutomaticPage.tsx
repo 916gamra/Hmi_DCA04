@@ -15,10 +15,11 @@ import {
   Clock,
   Compass,
   BarChart3,
-  Layers
+  Sliders,
+  Target
 } from 'lucide-react';
 import { Translations, Language } from '../core/i18n';
-import { norm360 } from '../core/model';
+import { norm360, fmt } from '../core/model';
 import { safeStorage } from '../core/safeStorage';
 import { HEADS, LAYER_COLORS } from '../core/constants';
 import { NumberStepper } from './NumberStepper';
@@ -44,21 +45,31 @@ interface SemiAutomaticPageProps {
   setViewOptions?: (opts: ViewOptions) => void;
 }
 
-const STORAGE_KEY_SEMI = 'hmi-tray-semiauto-state-v3';
+const STORAGE_KEY_SEMI = 'hmi-tray-semiauto-state-v4';
 const MAX_HOLES = 1500;
 
 interface SemiAutoSavedState {
+  // Live machine state
   thetaDeg?: number;
   rMm?: number;
   spindleOn?: boolean;
   tableZUp?: boolean;
-  rOuterMaxMm?: number;
-  stepAngleDeg?: number;
+
+  // Concentric ring geometric parameters
+  trayDMm?: number;
+  marginMm?: number;
+  layersCount?: number;
+  rLastDiameterMm?: number;
+  nPoints?: number;
   stepRadialMm?: number;
+
+  // Machine dynamics
   dwellSec?: number;
   rotHz?: number;
   expHz?: number;
   currentLayer?: number;
+
+  // Holes memory
   holes?: SemiHole[];
 }
 
@@ -84,9 +95,72 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     return safeStorage.getJSON<SemiAutoSavedState>(STORAGE_KEY_SEMI, {});
   }, []);
 
-  const defaultROuter = params?.trayD ? params.trayD / 2 : 220;
+  const defaultTrayD = params?.trayD && Number.isFinite(params.trayD) ? params.trayD : 440;
+  const defaultMargin = params?.margin && Number.isFinite(params.margin) ? params.margin : 20;
+  const defaultLayers = params?.layers && Number.isFinite(params.layers) ? Math.max(1, Math.min(7, params.layers)) : 3;
+  const defaultRLastD = params?.rLast && Number.isFinite(params.rLast) ? params.rLast : 160;
+  const defaultN = params?.rawBase && Number.isFinite(params.rawBase) ? params.rawBase : 12;
 
-  // 1. Live Machine States
+  // 1. Concentric Circles Geometric Parameters (Master like Auto)
+  const [trayDMm, setTrayDMm] = useState<number>(() => {
+    const v = savedState.trayDMm;
+    return typeof v === 'number' && Number.isFinite(v) && v >= 50 ? v : defaultTrayD;
+  });
+
+  const [marginMm, setMarginMm] = useState<number>(() => {
+    const v = savedState.marginMm;
+    return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : defaultMargin;
+  });
+
+  const [layersCount, setLayersCount] = useState<number>(() => {
+    const v = savedState.layersCount;
+    return typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 7 ? Math.round(v) : defaultLayers;
+  });
+
+  const [rLastDiameterMm, setRLastDiameterMm] = useState<number>(() => {
+    const v = savedState.rLastDiameterMm;
+    return typeof v === 'number' && Number.isFinite(v) && v >= 10 ? v : defaultRLastD;
+  });
+
+  // Angular grid points count per ring (sanitized multiple of 3)
+  const [nPoints, setNPoints] = useState<number>(() => {
+    const v = savedState.nPoints;
+    return typeof v === 'number' && Number.isFinite(v) && v >= 3 ? Math.round(v) : defaultN;
+  });
+
+  // Derived angular indexing step (θ) for table jog and grid
+  const stepAngleDeg = useMemo(() => {
+    const safeN = Math.max(1, nPoints);
+    return Number((360 / safeN).toFixed(3));
+  }, [nPoints]);
+
+  // Jog step for r± remote button ONLY (strictly separated from geometric spacing s)
+  const [stepRadialMm, setStepRadialMm] = useState<number>(() => {
+    const v = savedState.stepRadialMm;
+    return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 15;
+  });
+
+  // 2. Strict Radius-Only Calculation (copied verbatim from specification)
+  const R = useMemo(() => trayDMm / 2, [trayDMm]);
+  const r1 = useMemo(() => Math.max(0, R - marginMm), [R, marginMm]);
+  const rLastR = useMemo(() => Math.max(0, rLastDiameterMm / 2), [rLastDiameterMm]);
+
+  // Derived spacing s (displayed READ-ONLY like Auto)
+  const sMm = useMemo(() => {
+    return layersCount > 1 ? (r1 - rLastR) / (layersCount - 1) : 0;
+  }, [layersCount, r1, rLastR]);
+
+  // Computed radii for all layers i = 0 .. layersCount - 1
+  const ringRadii = useMemo(() => {
+    const arr: number[] = [];
+    for (let i = 0; i < layersCount; i++) {
+      const ri = i === layersCount - 1 ? rLastR : Math.max(0, r1 - i * sMm);
+      arr.push(Number(ri.toFixed(2)));
+    }
+    return arr;
+  }, [layersCount, r1, rLastR, sMm]);
+
+  // 3. Live Machine States
   const [thetaDeg, setThetaDeg] = useState<number>(() => {
     const v = savedState.thetaDeg;
     return typeof v === 'number' && Number.isFinite(v) ? v : 0;
@@ -94,7 +168,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
   const [rMm, setRMm] = useState<number>(() => {
     const v = savedState.rMm;
-    return typeof v === 'number' && Number.isFinite(v) ? v : 120;
+    return typeof v === 'number' && Number.isFinite(v) ? v : (ringRadii[0] || 120);
   });
 
   const [spindleOn, setSpindleOn] = useState<boolean>(() => {
@@ -105,22 +179,6 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
   const [tableZUp, setTableZUp] = useState<boolean>(() => {
     return savedState.tableZUp !== false;
-  });
-
-  // 2. Machine Parameters (Independent rOuterMaxMm, default synced with trayD / 2 if fresh)
-  const [rOuterMaxMm, setROuterMaxMm] = useState<number>(() => {
-    const v = savedState.rOuterMaxMm;
-    return typeof v === 'number' && Number.isFinite(v) && v >= 20 ? v : defaultROuter;
-  });
-
-  const [stepAngleDeg, setStepAngleDeg] = useState<number>(() => {
-    const v = savedState.stepAngleDeg;
-    return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 15;
-  });
-
-  const [stepRadialMm, setStepRadialMm] = useState<number>(() => {
-    const v = savedState.stepRadialMm;
-    return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 15;
   });
 
   const [dwellSec, setDwellSec] = useState<number>(() => {
@@ -140,10 +198,10 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
   const [currentLayer, setCurrentLayer] = useState<number>(() => {
     const v = savedState.currentLayer;
-    return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v < 7 ? v : 0;
+    return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v < 7 ? Math.round(v) : 0;
   });
 
-  // 3. Holes Persistent Memory with corruption protection
+  // 4. Holes Persistent Memory with corruption protection
   const [holes, setHoles] = useState<SemiHole[]>(() => {
     const arr = savedState.holes;
     if (Array.isArray(arr)) {
@@ -159,7 +217,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     return [];
   });
 
-  // 4. Drawer & Confirmation Dialog
+  // Drawer & Dialog State
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState<boolean>(false);
   const [openSection, setOpenSection] = useState<'geo' | 'pts' | 'timing' | 'modes' | null>('geo');
@@ -211,8 +269,11 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       rMm,
       spindleOn,
       tableZUp,
-      rOuterMaxMm,
-      stepAngleDeg,
+      trayDMm,
+      marginMm,
+      layersCount,
+      rLastDiameterMm,
+      nPoints,
       stepRadialMm,
       dwellSec,
       rotHz,
@@ -226,8 +287,11 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     rMm,
     spindleOn,
     tableZUp,
-    rOuterMaxMm,
-    stepAngleDeg,
+    trayDMm,
+    marginMm,
+    layersCount,
+    rLastDiameterMm,
+    nPoints,
     stepRadialMm,
     dwellSec,
     rotHz,
@@ -236,32 +300,61 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     holes,
   ]);
 
-  // Protection: clamp rMm if rOuterMaxMm is reduced
+  // Clamping safety checks
   useEffect(() => {
-    if (rMm > rOuterMaxMm) {
-      setRMm(rOuterMaxMm);
+    if (rMm > R) {
+      setRMm(R);
     }
-  }, [rOuterMaxMm, rMm]);
+  }, [R, rMm]);
 
-  // Stepping Handlers
-  const handleTableStep = useCallback((dir: 1 | -1) => {
-    setThetaDeg((prev) => norm360(prev + dir * stepAngleDeg));
-  }, [stepAngleDeg]);
+  useEffect(() => {
+    if (currentLayer >= layersCount) {
+      setCurrentLayer(Math.max(0, layersCount - 1));
+    }
+  }, [layersCount, currentLayer]);
+
+  useEffect(() => {
+    if (rLastR > r1) {
+      setRLastDiameterMm(Math.max(10, Math.round(r1 * 2)));
+    }
+  }, [r1, rLastR]);
+
+  // Remote Stepping Handlers
+  const handleTableStep = useCallback(
+    (dir: 1 | -1) => {
+      setThetaDeg((prev) => norm360(prev + dir * stepAngleDeg));
+    },
+    [stepAngleDeg]
+  );
 
   const handleTableHome = useCallback(() => {
     setThetaDeg(0);
   }, []);
 
-  const handleRadialStep = useCallback((dir: 1 | -1) => {
-    setRMm((prev) => {
-      const next = prev + dir * stepRadialMm;
-      return Math.max(0, Math.min(next, rOuterMaxMm));
-    });
-  }, [stepRadialMm, rOuterMaxMm]);
+  const handleRadialStep = useCallback(
+    (dir: 1 | -1) => {
+      setRMm((prev) => {
+        const next = prev + dir * stepRadialMm;
+        return Math.max(0, Math.min(next, R));
+      });
+    },
+    [stepRadialMm, R]
+  );
 
   const handleRadialMax = useCallback(() => {
-    setRMm(rOuterMaxMm);
-  }, [rOuterMaxMm]);
+    setRMm(r1);
+  }, [r1]);
+
+  // Quick jump to active layer's radius
+  const handleJumpToLayerRadius = useCallback(
+    (layerIdx: number) => {
+      const targetR = ringRadii[layerIdx];
+      if (typeof targetR === 'number' && Number.isFinite(targetR)) {
+        setRMm(targetR);
+      }
+    },
+    [ringRadii]
+  );
 
   // Plunge Timer & State Handlers
   const plungeTimerRef = useRef<number | null>(null);
@@ -294,7 +387,20 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
         drilledAt: Date.now(),
       };
     });
-    setHoles((prev) => [...prev, ...newHoles]);
+
+    // Prevent identical duplicate holes on the same layer, radius and angle
+    setHoles((prev) => {
+      const filteredNew = newHoles.filter(
+        (nh) =>
+          !prev.some(
+            (ph) =>
+              ph.layer === nh.layer &&
+              Math.abs(ph.r - nh.r) < 1.0 &&
+              Math.abs(norm360(ph.a) - norm360(nh.a)) < 0.5
+          )
+      );
+      return [...prev, ...filteredNew];
+    });
   }, [holes.length, currentLayer, rMm, thetaDeg, onShowToast, t.maxHolesReachedWarning]);
 
   const handlePlungeDown = useCallback(() => {
@@ -353,93 +459,137 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     setHoles([]);
   }, []);
 
-  // Construct TrayModel for CanvasStage:
-  // - Drilled permanent holes (fired: true)
-  // - Ghost division points on current radius rMm (fired: false)
-  // - totalPts and totalDrilled correctly count holes without counting the 720 ghost points!
+  // 6. Complete Geometric Grid Construction (Concentric Rings + Ghosts + Drilled Holes)
   const toolRadius = params?.tool ? params.tool / 2 : 8;
 
   const semiAutoModel: TrayModel = useMemo(() => {
-    const pts: Point[] = [];
+    const allPts: Point[] = [];
+    const layerPtsMap: Point[][] = Array.from({ length: layersCount }, () => []);
 
-    // 1. Drilled permanent holes
-    holes.forEach((h, idx) => {
-      const rad = (h.a * Math.PI) / 180;
-      pts.push({
-        x: h.r * Math.cos(rad),
-        y: h.r * Math.sin(rad),
-        a: h.a,
-        layer: h.layer,
-        k: idx,
-        head: h.head,
-        j: 0,
-        bad: false,
-        fired: true,
-      });
+    // For each layer i (0 .. layersCount - 1) and each angle k * stepAngleDeg:
+    ringRadii.forEach((ri, i) => {
+      for (let k = 0; k < nPoints; k++) {
+        const a = norm360(k * stepAngleDeg);
+
+        // Check if there is an existing drilled hole in holes[] matching this layer and angular position
+        const matchingHole = holes.find((h) => {
+          const rMatch = Math.abs(h.r - ri) < 2.0;
+          const aDiff = Math.abs(norm360(h.a) - a);
+          const aMatch = aDiff < 0.75 || Math.abs(aDiff - 360) < 0.75;
+          return (h.layer === i || rMatch) && aMatch;
+        });
+
+        const rad = (a * Math.PI) / 180;
+
+        if (matchingHole) {
+          // Drilled permanent hole
+          const pt: Point = {
+            x: ri * Math.cos(rad),
+            y: ri * Math.sin(rad),
+            a: matchingHole.a,
+            layer: i,
+            k: allPts.length,
+            head: matchingHole.head,
+            j: 0,
+            bad: false,
+            fired: true,
+          };
+          layerPtsMap[i].push(pt);
+          allPts.push(pt);
+        } else {
+          // Available design position: GHOST RETICLE (fired: false)
+          const pt: Point = {
+            x: ri * Math.cos(rad),
+            y: ri * Math.sin(rad),
+            a,
+            layer: i,
+            k: allPts.length,
+            head: 0,
+            j: 0,
+            bad: false,
+            fired: false,
+          };
+          layerPtsMap[i].push(pt);
+          allPts.push(pt);
+        }
+      }
     });
 
-    // 2. Ghost division reticles on current radius rMm
-    const safeStep = Math.max(0.5, stepAngleDeg);
-    const divisions = Math.min(360, Math.round(360 / safeStep));
-    for (let i = 0; i < divisions; i++) {
-      const a = norm360(i * safeStep);
-      const alreadyDrilled = holes.some(
-        (h) => Math.abs(h.r - rMm) < 1.5 && Math.abs(norm360(h.a - a)) < 0.5
+    // Also include any holes in holes[] that were drilled off-grid so no user data is ever lost
+    holes.forEach((h) => {
+      const isAccounted = allPts.some(
+        (p) =>
+          p.fired &&
+          Math.abs(p.x - h.r * Math.cos((h.a * Math.PI) / 180)) < 0.5 &&
+          Math.abs(p.y - h.r * Math.sin((h.a * Math.PI) / 180)) < 0.5
       );
-      if (!alreadyDrilled) {
-        const rad = (a * Math.PI) / 180;
-        pts.push({
-          x: rMm * Math.cos(rad),
-          y: rMm * Math.sin(rad),
-          a,
-          layer: currentLayer,
-          k: pts.length,
-          head: 0,
+      if (!isAccounted) {
+        const rad = (h.a * Math.PI) / 180;
+        const targetLayerIdx = Math.min(Math.max(0, h.layer), layersCount - 1);
+        const pt: Point = {
+          x: h.r * Math.cos(rad),
+          y: h.r * Math.sin(rad),
+          a: h.a,
+          layer: targetLayerIdx,
+          k: allPts.length,
+          head: h.head,
           j: 0,
           bad: false,
-          fired: false, // ghost cross / dashed ring
-        });
+          fired: true,
+        };
+        layerPtsMap[targetLayerIdx]?.push(pt);
+        allPts.push(pt);
       }
-    }
+    });
 
     return {
-      R: rOuterMaxMm,
+      R,
       toolR: toolRadius,
-      r1: rOuterMaxMm,
-      rLast: rMm,
-      d1: rOuterMaxMm * 2,
-      dLast: rMm * 2,
-      radialStepMm: stepRadialMm,
-      layers: [
-        {
-          i: currentLayer,
-          r: rMm,
-          n: holes.length, // Accurate count of drilled holes on layer
-          per: 0,
-          step: safeStep,
-          off: 0,
-          pts,
-          minD: 0,
-          bad: 0,
-        },
-      ],
-      all: pts,
+      r1,
+      rLast: rLastR,
+      d1: r1 * 2,
+      dLast: rLastR * 2,
+      radialStepMm: sMm,
+      layers: ringRadii.map((ri, i) => ({
+        i,
+        r: ri,
+        n: nPoints,
+        per: Math.round(nPoints / 3),
+        step: stepAngleDeg,
+        off: 0,
+        pts: layerPtsMap[i] || [],
+        minD: 0,
+        bad: 0,
+      })),
+      all: allPts,
       minD: 0,
       badCount: 0,
       warns: [],
-      totalPts: holes.length, // Accurate hole counter
-      totalDrilled: holes.length,
+      totalPts: layersCount * nPoints,
+      totalDrilled: holes.length, // Real hole counter only (never count ghosts!)
       totalSteps: 1,
       hasErr: false,
       hasWarn: false,
     };
-  }, [holes, stepAngleDeg, rMm, currentLayer, rOuterMaxMm, stepRadialMm, toolRadius]);
+  }, [
+    layersCount,
+    ringRadii,
+    nPoints,
+    stepAngleDeg,
+    holes,
+    R,
+    toolRadius,
+    r1,
+    rLastR,
+    sMm,
+  ]);
 
   const semiAutoState: SimulationState = useMemo(() => {
     return {
       theta: thetaDeg,
       headR: rMm,
-      counts: [holes.length],
+      // counts >= 9999 ensures points with fired: true are rendered as drilled
+      counts: ringRadii.map(() => 99999),
       cur: {
         type: plungeDown ? 'fire' : 'index',
         t0: 0,
@@ -455,7 +605,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       done: false,
       u: 0,
     };
-  }, [thetaDeg, rMm, spindleOn, plungeDown, holes.length, currentLayer]);
+  }, [thetaDeg, rMm, ringRadii, plungeDown, currentLayer, spindleOn]);
 
   // Card toggle renderer for parameters drawer
   const renderCard = (
@@ -491,37 +641,91 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
   // Parameter drawer content: 4 standard cards matching Auto design
   const parametersContent = (
     <div className="flex flex-col gap-3">
-      {/* 1. Géométrie du plateau */}
+      {/* 1. Géométrie du plateau & Cercles concentriques */}
       {renderCard(
         'geo',
         t.cardSemiGeoTitle,
         <Disc className="w-4 h-4 text-blue-600" />,
         <>
+          {/* Tray Diameter */}
           <div>
             <label className="block text-[11px] font-semibold text-[#475569] mb-1">
-              {t.rOuterMaxLabel}
+              {t.trayDiameter} (Ø)
             </label>
             <NumberStepper
-              value={rOuterMaxMm}
-              min={50}
-              max={500}
-              step={5}
+              value={trayDMm}
+              min={100}
+              max={1200}
+              step={10}
               unit="mm"
-              onChange={setROuterMaxMm}
+              onChange={(val) => setTrayDMm(Math.max(100, val))}
             />
           </div>
+
+          {/* Margin from Rim */}
           <div>
             <label className="block text-[11px] font-semibold text-[#475569] mb-1">
-              {t.currentRadiusLabel}
+              {t.margin} (M)
             </label>
             <NumberStepper
-              value={rMm}
+              value={marginMm}
               min={0}
-              max={rOuterMaxMm}
+              max={150}
               step={1}
               unit="mm"
-              onChange={(val) => setRMm(Math.min(val, rOuterMaxMm))}
+              onChange={(val) => setMarginMm(Math.max(0, val))}
             />
+          </div>
+
+          {/* Number of concentric layers (1..7) */}
+          <div>
+            <label className="block text-[11px] font-semibold text-[#475569] mb-1">
+              {t.layersCount} (1–7)
+            </label>
+            <NumberStepper
+              value={layersCount}
+              min={1}
+              max={7}
+              step={1}
+              unit=""
+              onChange={(val) => setLayersCount(Math.max(1, Math.min(7, Math.round(val))))}
+            />
+          </div>
+
+          {/* Last / Innermost Layer Diameter */}
+          <div>
+            <label className="block text-[11px] font-semibold text-[#475569] mb-1">
+              {t.lastLayerD} (D_last)
+            </label>
+            <NumberStepper
+              value={rLastDiameterMm}
+              min={10}
+              max={Math.max(20, Math.round(r1 * 2))}
+              step={5}
+              unit="mm"
+              onChange={(val) => setRLastDiameterMm(Math.max(10, val))}
+            />
+          </div>
+
+          {/* Derived Spacing s (Read-Only Badge) */}
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100 border border-slate-200">
+            <div>
+              <span className="text-xs font-bold text-slate-800 block">
+                {t.spacing} (s)
+              </span>
+              <span className="text-[10px] text-slate-500 block">
+                {t.derivedSpacingBadge}
+              </span>
+            </div>
+            <span className="text-xs font-mono font-extrabold text-blue-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+              {fmt(sMm, 1)} mm
+            </span>
+          </div>
+
+          {/* Summary pill of R1 and R_last */}
+          <div className="p-2 rounded-xl bg-blue-50/70 border border-blue-100 text-[11px] font-mono text-blue-900 flex justify-between">
+            <span>R₁ = {fmt(r1, 1)} mm</span>
+            <span>R_last = {fmt(rLastR, 1)} mm</span>
           </div>
         </>
       )}
@@ -532,55 +736,94 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
         t.cardSemiPtsTitle,
         <Compass className="w-4 h-4 text-emerald-600" />,
         <>
+          {/* Points count per circle n (multiple of 3) */}
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-[11px] font-semibold text-[#475569]">
-                {t.stepAngleLabel}
+                {t.nPointsCircleLabel}
               </label>
               <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
-                {Math.round(360 / Math.max(0.5, stepAngleDeg))} {t.ptsPerTurn}
+                n = {nPoints} {t.ptsPerTurn}
               </span>
             </div>
             <NumberStepper
-              value={stepAngleDeg}
-              min={0.5}
-              max={180}
-              step={0.5}
-              unit="°"
-              onChange={setStepAngleDeg}
+              value={nPoints}
+              min={3}
+              max={120}
+              step={3}
+              unit=""
+              onChange={(val) => setNPoints(Math.max(3, Math.round(val)))}
             />
           </div>
 
+          {/* Derived Indexing Angle step θ */}
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200">
+            <div>
+              <span className="text-xs font-bold text-emerald-900 block">
+                {t.stepAngleIndexingLabel}
+              </span>
+              <span className="text-[10px] text-emerald-700 block">
+                360° / {nPoints}
+              </span>
+            </div>
+            <span className="text-xs font-mono font-extrabold text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs">
+              {stepAngleDeg}°
+            </span>
+          </div>
+
+          {/* Jog step for r± remote button ONLY */}
           <div>
             <label className="block text-[11px] font-semibold text-[#475569] mb-1">
-              {t.stepRadialLabel}
+              {t.stepRadialLabel} (r±)
             </label>
             <NumberStepper
               value={stepRadialMm}
               min={1}
-              max={100}
+              max={50}
               step={1}
               unit="mm"
-              onChange={setStepRadialMm}
+              onChange={(val) => setStepRadialMm(Math.max(1, val))}
             />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold text-[#475569] mb-1 flex items-center justify-between">
-              <span>{t.layerActiveLabel}</span>
-              <span
-                className="w-3 h-3 rounded-full border border-slate-300"
-                style={{ backgroundColor: LAYER_COLORS[currentLayer % LAYER_COLORS.length] }}
-              />
+          {/* Active Layer Selection Pills + Go To Radius button */}
+          <div className="flex flex-col gap-2 pt-1 border-t border-slate-200">
+            <label className="block text-[11px] font-semibold text-[#475569]">
+              {t.layerActiveLabel} (1 .. {layersCount})
             </label>
-            <NumberStepper
-              value={currentLayer + 1}
-              min={1}
-              max={7}
-              step={1}
-              unit=""
-              onChange={(val) => setCurrentLayer(Math.max(0, Math.min(6, Math.round(val) - 1)))}
-            />
+            <div className="flex flex-wrap gap-1.5">
+              {ringRadii.map((ri, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setCurrentLayer(idx)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    currentLayer === idx
+                      ? 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-400'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block"
+                    style={{ backgroundColor: LAYER_COLORS[idx % LAYER_COLORS.length] }}
+                  />
+                  <span>L{idx + 1}</span>
+                  <span className="text-[10px] opacity-75 font-mono">({fmt(ri, 0)}mm)</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Go to active layer radius button */}
+            <button
+              type="button"
+              onClick={() => handleJumpToLayerRadius(currentLayer)}
+              className="mt-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-all cursor-pointer active:scale-98 shadow-2xs"
+            >
+              <Target className="w-3.5 h-3.5" />
+              <span>
+                {t.goToLayerRadiusBtn} (r → {fmt(ringRadii[currentLayer] || 0, 1)} mm)
+              </span>
+            </button>
           </div>
         </>
       )}
@@ -606,57 +849,46 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
               max={10}
               step={0.1}
               unit="s"
-              onChange={setDwellSec}
+              onChange={(val) => setDwellSec(Math.max(0, val))}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-semibold text-[#475569]">
-                  {t.rotHzLabel}
-                </label>
-                <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1 py-0.2 rounded">
-                  {t.hardwareSoonBadge}
-                </span>
-              </div>
-              <NumberStepper
-                value={rotHz}
-                min={0.1}
-                max={10}
-                step={0.1}
-                unit="Hz"
-                onChange={setRotHz}
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-semibold text-[#475569]">
-                  {t.expHzLabel}
-                </label>
-                <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1 py-0.2 rounded">
-                  {t.hardwareSoonBadge}
-                </span>
-              </div>
-              <NumberStepper
-                value={expHz}
-                min={0.1}
-                max={10}
-                step={0.1}
-                unit="Hz"
-                onChange={setExpHz}
-              />
-            </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#475569] mb-1">
+              {t.rotHzLabel}
+            </label>
+            <NumberStepper
+              value={rotHz}
+              min={0.1}
+              max={10}
+              step={0.1}
+              unit="Hz"
+              onChange={(val) => setRotHz(Math.max(0.1, val))}
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-[#475569] mb-1">
+              {t.expHzLabel}
+            </label>
+            <NumberStepper
+              value={expHz}
+              min={0.1}
+              max={10}
+              step={0.1}
+              unit="Hz"
+              onChange={(val) => setExpHz(Math.max(0.1, val))}
+            />
           </div>
         </>
       )}
 
-      {/* 4. Modes Machine */}
+      {/* 4. Modes machine */}
       {renderCard(
         'modes',
         t.cardSemiModesTitle,
-        <Settings className="w-4 h-4 text-slate-600" />,
-        <div className="flex flex-col gap-2.5">
+        <Sliders className="w-4 h-4 text-purple-600" />,
+        <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
             <div>
               <span className="text-xs font-bold text-slate-800 block">
@@ -723,6 +955,19 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             {rMm.toFixed(1)}
           </span>
         </div>
+        {/* Active Layer L */}
+        <div className="p-1.5 bg-purple-50 rounded-xl border border-purple-200 text-purple-700">
+          <span className="text-[9px] font-bold block">
+            {isAr ? 'الطبقة' : 'Couche'}
+          </span>
+          <span className="text-xs font-mono font-extrabold flex items-center justify-center gap-1">
+            <span
+              className="w-2 h-2 rounded-full inline-block"
+              style={{ backgroundColor: LAYER_COLORS[currentLayer % LAYER_COLORS.length] }}
+            />
+            L{currentLayer + 1}
+          </span>
+        </div>
         {/* Spindle */}
         <div
           className={`p-1.5 rounded-xl border transition-colors ${
@@ -736,25 +981,17 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             {spindleOn ? 'ON' : 'OFF'}
           </span>
         </div>
-        {/* Plunge */}
-        <div
-          className={`p-1.5 rounded-xl border transition-all ${
-            plungeDown
-              ? 'bg-red-500 border-red-600 text-white ring-2 ring-red-400 animate-pulse'
-              : 'bg-slate-50 border-slate-200 text-slate-500'
-          }`}
-        >
-          <span className="text-[9px] font-bold block">Plunge</span>
-          <span className="text-[10px] font-extrabold">
-            {plungeDown ? 'DOWN' : 'UP'}
-          </span>
-        </div>
-        {/* Holes Count */}
+        {/* Drilled Holes / Available Count */}
         <div className="p-1.5 bg-indigo-50 rounded-xl border border-indigo-200 text-indigo-700">
           <span className="text-[9px] font-bold block">
-            {isAr ? 'الثقوب' : 'Trous'}
+            {isAr ? 'المحفور' : 'Percés'}
           </span>
-          <span className="text-xs font-mono font-extrabold">{holes.length}</span>
+          <span className="text-xs font-mono font-extrabold">
+            {holes.length}
+            <span className="text-[10px] text-indigo-400 font-normal">
+              /{layersCount * nPoints}
+            </span>
+          </span>
         </div>
       </div>
 
@@ -1027,7 +1264,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
                   </div>
                   <div>
                     <span className="text-xs font-bold text-[#0f172a] block">
-                      {isAr ? 'بارامترات الوضع شبه التلقائي' : 'Paramètres Semi-Auto'}
+                      {isAr ? 'بارامترات شبكة وتصميم Semi-Auto' : 'Paramètres Grille Semi-Auto'}
                     </span>
                     <span className="text-[10px] text-[#64748b] block">
                       {t.swipeToAdjust}
@@ -1071,7 +1308,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
           <div className="oneui-card p-4 bg-white border border-slate-200 rounded-3xl shadow-2xs flex flex-col gap-3">
             <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2.5">
               <SlidersHorizontal className="w-4 h-4 text-blue-600" />
-              <span>{isAr ? 'بارامترات التشغيل' : 'Paramètres d’usinage'}</span>
+              <span>{isAr ? 'بارامترات التصميم والشبكة' : 'Paramètres d’usinage et grille'}</span>
             </h3>
             {parametersContent}
           </div>
