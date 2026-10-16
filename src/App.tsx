@@ -238,6 +238,7 @@ export default function App() {
         onOpenTechModal={() => modals.setIsTechModalOpen(true)}
         notificationsEnabled={notificationsEnabled}
         onToggleNotifications={handleToggleNotifications}
+        activeTab={mainTab}
       />
 
       {/* 2. Main Content Canvas & Panels */}
@@ -288,6 +289,10 @@ export default function App() {
             <SemiAutomaticPage
               t={t}
               lang={lang}
+              params={params}
+              onShowToast={showToast}
+              viewOptions={viewOptions}
+              setViewOptions={setViewOptions}
             />
           )}
 

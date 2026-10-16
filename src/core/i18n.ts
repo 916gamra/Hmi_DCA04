@@ -373,6 +373,25 @@ export interface Translations {
   statusUp: string;
   statusDown: string;
   hardwareSoonBadge: string;
+  cardSemiGeoTitle: string;
+  cardSemiPtsTitle: string;
+  cardSemiTimingTitle: string;
+  cardSemiModesTitle: string;
+  spindleOffWarning: string;
+  maxHolesReachedWarning: string;
+  undoLastPlungeBtn: string;
+  clearAllHolesBtn: string;
+  confirmClearHolesTitle: string;
+  confirmClearHolesDesc: string;
+  ptsPerTurn: string;
+  dwellHoldHint: string;
+  dwellPulseHint: string;
+  tablePosHigh: string;
+  tablePosLow: string;
+  spindleRunning: string;
+  spindleStopped: string;
+  currentRadiusLabel: string;
+  layerActiveLabel: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -734,6 +753,25 @@ export const translations: Record<Language, Translations> = {
     statusUp: 'مرتفع',
     statusDown: 'نازل',
     hardwareSoonBadge: 'قريباً / عتاد',
+    cardSemiGeoTitle: 'هندسة الصينية (Plateau)',
+    cardSemiPtsTitle: 'توزيع النقاط والزوايا (Angles & Pas)',
+    cardSemiTimingTitle: 'التوقيت والسرعة (Vitesse & Temporisation)',
+    cardSemiModesTitle: 'أوضاع الآلة (Modes machine)',
+    spindleOffWarning: 'تنبيه: يجب تشغيل رؤوس التزيين (Spindle ON) قبل الحفر!',
+    maxHolesReachedWarning: 'تم الوصول للحد الأقصى للثقوب (1500 ثقب)!',
+    undoLastPlungeBtn: 'تراجع (3 ثقوب)',
+    clearAllHolesBtn: 'مسح كل الحفر',
+    confirmClearHolesTitle: 'تأكيد مسح كل الحفر',
+    confirmClearHolesDesc: 'هل أنت متأكد من مسح جميع الثقوب المحفورة في وضع Semi-Automatic؟ لا يمكن التراجع عن هذا الإجراء.',
+    ptsPerTurn: 'تقسيم/دورة',
+    dwellHoldHint: '0 = استمرار بالضغط (Hold)',
+    dwellPulseHint: 'نبضة مؤقتة (Pulse)',
+    tablePosHigh: 'مرتفعة للأعلى (UP)',
+    tablePosLow: 'نازلة للأسفل (DOWN)',
+    spindleRunning: 'تدور وجاهزة للحفر',
+    spindleStopped: 'متوقفة (OFF)',
+    currentRadiusLabel: 'نصف القطر الحالي للرؤوس r (مم)',
+    layerActiveLabel: 'الطبقة النشطة (Layer)',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -1093,5 +1131,24 @@ export const translations: Record<Language, Translations> = {
     statusUp: 'Haut',
     statusDown: 'Bas',
     hardwareSoonBadge: 'Bientôt / Matériel',
+    cardSemiGeoTitle: 'Géométrie du plateau',
+    cardSemiPtsTitle: 'Répartition des points & ANGLES',
+    cardSemiTimingTitle: 'Temporisation et vitesse',
+    cardSemiModesTitle: 'Modes machine',
+    spindleOffWarning: 'Attention : Activez la broche (Spindle ON) avant de percer !',
+    maxHolesReachedWarning: 'Limite maximale de trous atteinte (1500 trous) !',
+    undoLastPlungeBtn: 'Annuler (3 trous)',
+    clearAllHolesBtn: 'Effacer tout',
+    confirmClearHolesTitle: 'Confirmer l’effacement',
+    confirmClearHolesDesc: 'Voulez-vous vraiment effacer tous les trous percés dans ce mode ? Cette action est irréversible.',
+    ptsPerTurn: 'div/tour',
+    dwellHoldHint: '0 = Maintien (Hold)',
+    dwellPulseHint: 'Impulsion (Pulse)',
+    tablePosHigh: 'Position Haute (UP)',
+    tablePosLow: 'Position Basse (DOWN)',
+    spindleRunning: 'En rotation (ON)',
+    spindleStopped: 'À l’arrêt (OFF)',
+    currentRadiusLabel: 'Rayon actuel des têtes r (mm)',
+    layerActiveLabel: 'Couche active (Layer)',
   },
 };

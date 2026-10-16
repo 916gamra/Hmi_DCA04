@@ -25,6 +25,7 @@ interface HeaderProps {
   onOpenTechModal: () => void;
   notificationsEnabled?: boolean;
   onToggleNotifications?: () => void;
+  activeTab?: 'auto' | 'manual' | 'semiauto' | 'article';
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -37,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTechModal,
   notificationsEnabled = false,
   onToggleNotifications,
+  activeTab = 'auto',
 }) => {
   return (
     <header
@@ -64,25 +66,27 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Zone 2: Status Indicator (Center) */}
-        <div className="hidden lg:flex items-center">
-          {model.hasErr ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">
-              <XCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>{t.statusErr}</span>
-            </div>
-          ) : model.hasWarn ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              <span>{t.statusWarn}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              <span>{t.statusSafe}</span>
-            </div>
-          )}
-        </div>
+        {/* Zone 2: Status Indicator (Center) - Only for Auto mode */}
+        {activeTab === 'auto' && (
+          <div className="hidden lg:flex items-center">
+            {model.hasErr ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{t.statusErr}</span>
+              </div>
+            ) : model.hasWarn ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{t.statusWarn}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>{t.statusSafe}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Zone 3: Actions & Language Selector (Always Right in French/LTR layout) */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

@@ -478,8 +478,7 @@ export function renderCanvas(
     const layerColor = palette.layerColors[L.i % palette.layerColors.length];
 
     for (const q of L.pts) {
-      const isMachine = options.frameMode === 'machine';
-      const [x, y] = transformPoint(q.x, q.y, isMachine ? 0 : theta);
+      const [x, y] = transformPoint(q.x, q.y, theta); // Always rotate points by tray theta
       if (x < -30 || y < -30 || x > w + 30 || y > h + 30) continue;
 
       const isSkipped = q.fired === false;
