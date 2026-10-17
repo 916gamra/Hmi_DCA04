@@ -381,6 +381,27 @@ export interface Translations {
   numberingModeLayer: string;
   numberingModeGlobal: string;
   numberingModeHint: string;
+  cardSemiSafetyTitle: string;
+  rHeadMinLabel: string;
+  rHeadMinHint: string;
+  rHeadMinLimitReached: string;
+  rHeadMinStatusSafe: string;
+  rHeadMinStatusAtLimit: string;
+  executionPlanTitle: string;
+  executionPlanSubtitle: string;
+  planTotalPlunges: string;
+  planTotalBands: string;
+  planYoYoEliminated: string;
+  planRadialTravel: string;
+  planStepColExec: string;
+  planStepColBand: string;
+  planStepColRadius: string;
+  planStepColTheta: string;
+  planStepColHoles: string;
+  planStepColCommand: string;
+  planNoHolesMessage: string;
+  viewExecutionPlanBtn: string;
+  hideExecutionPlanBtn: string;
   spindleOffWarning: string;
   maxHolesReachedWarning: string;
   undoLastPlungeBtn: string;
@@ -772,6 +793,27 @@ export const translations: Record<Language, Translations> = {
     numberingModeLayer: 'لكل حلقة (1..n)',
     numberingModeGlobal: 'تراكمي شامل (1..N)',
     numberingModeHint: 'الترقيم لكل حلقة يطابق فيزياء الرؤوس الثلاثية ويقلل الخطوات',
+    cardSemiSafetyTitle: 'حدود الأمان ومسافة الرؤوس (Sécurité)',
+    rHeadMinLabel: 'حد أدنى شعاع الرؤوس (r min أمان)',
+    rHeadMinHint: 'أقرب مسافة ميكانيكية مسموحة للرؤوس نحو المركز لتفادي الاصطدام. مستقلة تماماً عن آخر حلقة تصميمية.',
+    rHeadMinLimitReached: 'تنبيه: تم بلوغ الحد الأدنى لشعاع الرؤوس (r min). تم تثبيت الحركة لمنع الاصطدام!',
+    rHeadMinStatusSafe: 'نطاق حركة آمن',
+    rHeadMinStatusAtLimit: 'الرؤوس عند الحد الأدنى (Butée)',
+    executionPlanTitle: 'مسار التشغيل (خارج ← داخل)',
+    executionPlanSubtitle: 'فرز أحادي الاتجاه يلغي ارتداد الرؤوس (Anti Yo-Yo) ويخفض زمن التشغيل',
+    planTotalPlunges: 'إجمالي الضربات (Plunges)',
+    planTotalBands: 'الأشرطة الشعاعية',
+    planYoYoEliminated: 'حركات Yo-Yo ملغاة',
+    planRadialTravel: 'مشوار الشعاع الخارجي للداخلي',
+    planStepColExec: '#',
+    planStepColBand: 'الشريط',
+    planStepColRadius: 'r (مم)',
+    planStepColTheta: 'θ (درجة)',
+    planStepColHoles: 'الثقوب',
+    planStepColCommand: 'الأمر التقديري',
+    planNoHolesMessage: 'لا توجد ثقوب مسجلة بعد. قم بالحفر اليدوي لتوليد مسار التشغيل الذكي تلقائياً.',
+    viewExecutionPlanBtn: 'عرض مسار التشغيل (خارج ← داخل)',
+    hideExecutionPlanBtn: 'إخفاء مسار التشغيل',
     spindleOffWarning: 'تنبيه: يجب تشغيل رؤوس التزيين (Spindle ON) قبل الحفر!',
     maxHolesReachedWarning: 'تم الوصول للحد الأقصى للثقوب (1500 ثقب)!',
     undoLastPlungeBtn: 'تراجع (3 ثقوب)',
@@ -1161,6 +1203,27 @@ export const translations: Record<Language, Translations> = {
     numberingModeLayer: 'Par anneau (1..n)',
     numberingModeGlobal: 'Cumulatif global (1..N)',
     numberingModeHint: 'La numérotation par anneau respecte la géométrie 3 têtes et optimise les passes',
+    cardSemiSafetyTitle: 'Sécurité & Butée mécanique',
+    rHeadMinLabel: 'Rayon minimal des têtes (r min sécurité)',
+    rHeadMinHint: 'Limite mécanique absolue vers le centre pour éviter la collision entre les têtes. Indépendante de l’anneau rLast.',
+    rHeadMinLimitReached: 'Attention : Butée minimale des têtes atteinte (r min). Mouvement vers le centre verrouillé !',
+    rHeadMinStatusSafe: 'Course libre et sûre',
+    rHeadMinStatusAtLimit: 'En butée minimale (Stop)',
+    executionPlanTitle: 'Plan d’exécution (Extérieur → Intérieur)',
+    executionPlanSubtitle: 'Séquencement sans va-et-vient radial (anti Yo-Yo), réduisant l’usure et le temps d’usinage',
+    planTotalPlunges: 'Total plongées',
+    planTotalBands: 'Bandes radiales',
+    planYoYoEliminated: 'Allers-retours évités',
+    planRadialTravel: 'Course radiale extérieure → intérieure',
+    planStepColExec: '#',
+    planStepColBand: 'Bande',
+    planStepColRadius: 'r (mm)',
+    planStepColTheta: 'θ (deg)',
+    planStepColHoles: 'Trous',
+    planStepColCommand: 'Commande estimée',
+    planNoHolesMessage: 'Aucun perçage enregistré. Effectuez des perçages pour générer le plan optimisé.',
+    viewExecutionPlanBtn: 'Afficher le plan d’exécution (Extérieur → Intérieur)',
+    hideExecutionPlanBtn: 'Masquer le plan d’exécution',
     spindleOffWarning: 'Attention : Activez la broche (Spindle ON) avant de percer !',
     maxHolesReachedWarning: 'Limite maximale de trous atteinte (1500 trous) !',
     undoLastPlungeBtn: 'Annuler (3 trous)',

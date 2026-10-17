@@ -18,11 +18,14 @@ import {
   Sliders,
   Target,
   Hash,
+  ShieldAlert,
+  Route,
 } from 'lucide-react';
 import { Translations, Language } from '../core/i18n';
 import { norm360, fmt } from '../core/model';
 import { safeStorage } from '../core/safeStorage';
 import { HEADS, LAYER_COLORS } from '../core/constants';
+import { buildExecutionPlan, ExecutionPlan } from '../core/plan';
 import { NumberStepper } from './NumberStepper';
 import { CanvasStage } from './CanvasStage';
 import { ConfirmModal } from './ConfirmModal';
@@ -64,6 +67,9 @@ interface SemiAutoSavedState {
   rLastDiameterMm?: number;
   nPoints?: number;
   stepRadialMm?: number;
+
+  // Mechanical safety limit (r min clearance)
+  rHeadMinMm?: number;
 
   // Machine dynamics
   dwellSec?: number;
@@ -165,6 +171,12 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     return arr;
   }, [layersCount, r1, rLastR, sMm]);
 
+  // 2.5 Mechanical Safety Limit (Anti-collision minimum radius)
+  const [rHeadMinMm, setRHeadMinMm] = useState<number>(() => {
+    const v = savedState.rHeadMinMm;
+    return typeof v === 'number' && Number.isFinite(v) && v >= 5 ? v : 40;
+  });
+
   // 3. Live Machine States
   const [thetaDeg, setThetaDeg] = useState<number>(() => {
     const v = savedState.thetaDeg;
@@ -173,7 +185,9 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
   const [rMm, setRMm] = useState<number>(() => {
     const v = savedState.rMm;
-    return typeof v === 'number' && Number.isFinite(v) ? v : (ringRadii[0] || 120);
+    const initial = typeof v === 'number' && Number.isFinite(v) ? v : (ringRadii[0] || 120);
+    const minLimit = typeof savedState.rHeadMinMm === 'number' && Number.isFinite(savedState.rHeadMinMm) && savedState.rHeadMinMm >= 5 ? savedState.rHeadMinMm : 40;
+    return Math.max(minLimit, initial);
   });
 
   const [spindleOn, setSpindleOn] = useState<boolean>(() => {
@@ -227,10 +241,19 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     return v === 'global' ? 'global' : 'layer';
   });
 
+  // 4.5 Optimal CAM Execution Plan (Outer -> Inner / Anti Yo-Yo)
+  const executionPlan = useMemo<ExecutionPlan>(() => {
+    return buildExecutionPlan(holes, {
+      stepRadialMm,
+      stepAngleDeg,
+      ringRadii,
+    });
+  }, [holes, stepRadialMm, stepAngleDeg, ringRadii]);
+
   // Drawer & Dialog State
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState<boolean>(false);
-  const [openSection, setOpenSection] = useState<'geo' | 'pts' | 'timing' | 'modes' | null>('geo');
+  const [openSection, setOpenSection] = useState<'geo' | 'pts' | 'timing' | 'modes' | 'safety' | 'plan' | null>('geo');
 
   // 5. Canvas Options (fixed machine mode in SemiAuto with live reactive theme)
   const [internalViewOptions, setInternalViewOptions] = useState<ViewOptions>(() => {
@@ -285,6 +308,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       rLastDiameterMm,
       nPoints,
       stepRadialMm,
+      rHeadMinMm,
       dwellSec,
       rotHz,
       expHz,
@@ -304,6 +328,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     rLastDiameterMm,
     nPoints,
     stepRadialMm,
+    rHeadMinMm,
     dwellSec,
     rotHz,
     expHz,
@@ -314,10 +339,12 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
   // Clamping safety checks
   useEffect(() => {
-    if (rMm > R) {
+    if (rMm < rHeadMinMm) {
+      setRMm(rHeadMinMm);
+    } else if (rMm > R) {
       setRMm(R);
     }
-  }, [R, rMm]);
+  }, [R, rMm, rHeadMinMm]);
 
   useEffect(() => {
     if (currentLayer >= layersCount) {
@@ -347,10 +374,19 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     (dir: 1 | -1) => {
       setRMm((prev) => {
         const next = prev + dir * stepRadialMm;
-        return Math.max(0, Math.min(next, R));
+        if (dir === -1 && next < rHeadMinMm) {
+          if (onShowToast) {
+            onShowToast(t.rHeadMinLimitReached);
+          }
+          return rHeadMinMm;
+        }
+        if (dir === 1 && next > R) {
+          return R;
+        }
+        return Math.max(rHeadMinMm, Math.min(next, R));
       });
     },
-    [stepRadialMm, R]
+    [stepRadialMm, R, rHeadMinMm, onShowToast, t]
   );
 
   const handleRadialMax = useCallback(() => {
@@ -362,10 +398,17 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     (layerIdx: number) => {
       const targetR = ringRadii[layerIdx];
       if (typeof targetR === 'number' && Number.isFinite(targetR)) {
-        setRMm(targetR);
+        if (targetR < rHeadMinMm) {
+          setRMm(rHeadMinMm);
+          if (onShowToast) {
+            onShowToast(t.rHeadMinLimitReached);
+          }
+        } else {
+          setRMm(targetR);
+        }
       }
     },
-    [ringRadii]
+    [ringRadii, rHeadMinMm, onShowToast, t]
   );
 
   // Plunge Timer & State Handlers
@@ -665,7 +708,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
   // Card toggle renderer for parameters drawer
   const renderCard = (
-    id: 'geo' | 'pts' | 'timing' | 'modes',
+    id: 'geo' | 'pts' | 'timing' | 'modes' | 'safety' | 'plan',
     title: string,
     icon: React.ReactNode,
     children: React.ReactNode
@@ -1063,6 +1106,171 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* 5. Sécurité mécanique & Rayon minimal des têtes (rHeadMin) */}
+      {renderCard(
+        'safety',
+        t.cardSemiSafetyTitle,
+        <ShieldAlert className="w-4 h-4 text-amber-600" />,
+        <div className="flex flex-col gap-3">
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] font-semibold text-[#475569]">
+                {t.rHeadMinLabel}
+              </label>
+              <span
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                  rMm <= rHeadMinMm + 0.1
+                    ? 'bg-amber-100 text-amber-800 border-amber-300'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}
+              >
+                {rMm <= rHeadMinMm + 0.1 ? t.rHeadMinStatusAtLimit : t.rHeadMinStatusSafe}
+              </span>
+            </div>
+            <NumberStepper
+              value={rHeadMinMm}
+              min={5}
+              max={Math.max(10, Math.round(r1))}
+              step={1}
+              unit="mm"
+              onChange={(val) => {
+                const clampedVal = Math.max(5, Math.min(val, Math.round(r1)));
+                setRHeadMinMm(clampedVal);
+                if (rMm < clampedVal) {
+                  setRMm(clampedVal);
+                }
+              }}
+            />
+            <span className="text-[10px] text-slate-500 block mt-1 leading-tight">
+              {t.rHeadMinHint}
+            </span>
+          </div>
+
+          {/* Comparison with design rLast */}
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-700 flex flex-col gap-1.5">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-slate-500">r min (أمان عتاد):</span>
+              <span className="font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                {rHeadMinMm} mm
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-slate-500">R_last (تصميم شبكة):</span>
+              <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                {fmt(rLastR, 1)} mm
+              </span>
+            </div>
+            <div className="pt-1.5 border-t border-slate-200 text-[10px] text-slate-500 leading-tight">
+              {rHeadMinMm < rLastR
+                ? (isAr
+                    ? '✓ يسمح للرؤوس بالنزول نحو المركز أبعد من آخر حلقة ما دام r ≥ rHeadMin.'
+                    : '✓ Les têtes peuvent descendre sous l’anneau rLast tant que r ≥ rHeadMin.')
+                : (isAr
+                    ? '⚠ حد الأمان يسبق آخر حلقة لحماية الرؤوس من التصادم الميكانيكي.'
+                    : '⚠ La butée mécanique précède le dernier anneau pour sécuriser les broches.')}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Plan d'exécution (Outer -> Inner / Anti Yo-Yo) */}
+      {renderCard(
+        'plan',
+        t.executionPlanTitle,
+        <Route className="w-4 h-4 text-indigo-600" />,
+        <div className="flex flex-col gap-2.5">
+          <span className="text-[11px] text-slate-500 leading-tight">
+            {t.executionPlanSubtitle}
+          </span>
+
+          {/* KPIs Grid */}
+          <div className="grid grid-cols-2 gap-1.5 text-center">
+            <div className="p-2 bg-indigo-50/80 rounded-xl border border-indigo-100">
+              <span className="text-[9px] font-bold text-indigo-600 block">{t.planTotalPlunges}</span>
+              <span className="text-xs font-mono font-extrabold text-indigo-900">
+                {executionPlan.totalPlunges}
+                <span className="text-[10px] text-indigo-500 font-normal"> ({executionPlan.totalHoles})</span>
+              </span>
+            </div>
+            <div className="p-2 bg-emerald-50/80 rounded-xl border border-emerald-100">
+              <span className="text-[9px] font-bold text-emerald-600 block">{t.planYoYoEliminated}</span>
+              <span className="text-xs font-mono font-extrabold text-emerald-800">
+                {executionPlan.yoYoReversalsEliminated} {isAr ? 'ارتداد' : 'évités'}
+              </span>
+            </div>
+            <div className="p-2 bg-slate-50 rounded-xl border border-slate-200">
+              <span className="text-[9px] font-bold text-slate-500 block">{t.planTotalBands}</span>
+              <span className="text-xs font-mono font-extrabold text-slate-800">
+                {executionPlan.totalBands} {isAr ? 'أشرطة' : 'bandes'}
+              </span>
+            </div>
+            <div className="p-2 bg-blue-50/80 rounded-xl border border-blue-100">
+              <span className="text-[9px] font-bold text-blue-600 block">{t.planRadialTravel}</span>
+              <span className="text-xs font-mono font-extrabold text-blue-900">
+                {executionPlan.totalRadialTravelMm} mm
+              </span>
+            </div>
+          </div>
+
+          {/* Bands Chips */}
+          {executionPlan.bands.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {executionPlan.bands.map((band) => (
+                <span
+                  key={band.bandIndex}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1"
+                >
+                  <span className="font-bold text-indigo-700">B{band.bandIndex}:</span>
+                  <span>{band.nominalR}mm</span>
+                  <span className="text-[9px] text-slate-500 font-sans">({band.matchingLayerName})</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state or Steps List */}
+          {executionPlan.steps.length === 0 ? (
+            <div className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+              {t.planNoHolesMessage}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 max-h-56 overflow-y-auto pr-1 text-[11px] font-mono scrollbar-thin">
+              <div className="grid grid-cols-12 gap-1 px-1.5 py-1 bg-slate-100 rounded-lg font-bold text-[9px] text-slate-600 sticky top-0 uppercase">
+                <span className="col-span-1 text-center">{t.planStepColExec}</span>
+                <span className="col-span-2">{t.planStepColBand}</span>
+                <span className="col-span-3">{t.planStepColRadius}</span>
+                <span className="col-span-3">{t.planStepColTheta}</span>
+                <span className="col-span-3 text-right">{t.planStepColCommand}</span>
+              </div>
+              {executionPlan.steps.map((st) => (
+                <div
+                  key={st.stepIndex}
+                  className="grid grid-cols-12 gap-1 px-1.5 py-1 rounded-lg bg-white border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors items-center"
+                >
+                  <span className="col-span-1 text-center font-bold text-indigo-700">
+                    {st.stepIndex}
+                  </span>
+                  <span className="col-span-2 text-[10px] text-slate-600 font-semibold truncate">
+                    B{st.bandIndex} <span className="text-[9px] text-slate-400">({st.matchingLayerName})</span>
+                  </span>
+                  <span className="col-span-3 font-semibold text-emerald-700">
+                    {st.rMm}mm
+                  </span>
+                  <span className="col-span-3 text-blue-700">
+                    {st.thetaDeg}°
+                  </span>
+                  <span className="col-span-3 text-right text-[10px] text-slate-500 truncate">
+                    {st.stepIndex === 1
+                      ? (isAr ? 'بدء (Start)' : 'Départ')
+                      : `${st.rPulses > 0 ? `R-(${st.rPulses}) ` : ''}${st.thetaPulses > 0 ? `T+(${st.thetaPulses})` : ''}` || '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -1078,9 +1286,26 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
           </span>
         </div>
         {/* r */}
-        <div className="p-1.5 bg-slate-50 rounded-xl border border-slate-200">
-          <span className="text-[9px] font-bold text-slate-500 block">r</span>
-          <span className="text-xs font-mono font-extrabold text-emerald-600">
+        <div
+          className={`p-1.5 rounded-xl border transition-colors ${
+            rMm <= rHeadMinMm + 0.1
+              ? 'bg-amber-50 border-amber-300'
+              : 'bg-slate-50 border-slate-200'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-0.5">
+            <span className="text-[9px] font-bold text-slate-500 block">r</span>
+            {rMm <= rHeadMinMm + 0.1 && (
+              <span className="text-[8px] font-bold text-amber-700 bg-amber-100 px-1 rounded">
+                MIN
+              </span>
+            )}
+          </div>
+          <span
+            className={`text-xs font-mono font-extrabold ${
+              rMm <= rHeadMinMm + 0.1 ? 'text-amber-700' : 'text-emerald-600'
+            }`}
+          >
             {rMm.toFixed(1)}
           </span>
         </div>
@@ -1124,7 +1349,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
         </div>
       </div>
 
-      {/* Undo & Clear Action Buttons */}
+      {/* Execution Plan Quick Bar & Action Buttons */}
       <div className="flex items-center justify-between pt-1 border-t border-slate-100">
         <button
           type="button"
@@ -1134,6 +1359,24 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
         >
           <RotateCcw className="w-3 h-3" />
           <span>{t.undoLastPlungeBtn}</span>
+        </button>
+
+        {/* Plan Access Button */}
+        <button
+          type="button"
+          onClick={() => {
+            setOpenSection((prev) => (prev === 'plan' ? null : 'plan'));
+            setIsMobileDrawerOpen(true);
+          }}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-all cursor-pointer shadow-2xs"
+        >
+          <Route className="w-3 h-3 text-indigo-600" />
+          <span>{t.executionPlanTitle}</span>
+          {executionPlan.steps.length > 0 && (
+            <span className="text-[9px] font-mono bg-indigo-600 text-white px-1.5 py-0.2 rounded-full font-extrabold">
+              {executionPlan.totalPlunges}
+            </span>
+          )}
         </button>
 
         <button

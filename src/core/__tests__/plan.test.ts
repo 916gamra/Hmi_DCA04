@@ -1,0 +1,133 @@
+import { describe, it, expect } from 'vitest';
+import {
+  deriveTableAngle,
+  buildExecutionPlan,
+  PlanHole,
+} from '../plan';
+
+describe('Execution Plan Engine (CAM Outer -> Inner)', () => {
+  it('correctly derives machine table angle from tray angle and head index', () => {
+    // When table is at 30°, heads at (0°, 120°, 240°) drill at tray angles:
+    // head 0: 0 - 30 = -30 = 330°
+    // head 1: 120 - 30 = 90°
+    // head 2: 240 - 30 = 210°
+    expect(deriveTableAngle(330, 0)).toBe(30);
+    expect(deriveTableAngle(90, 1)).toBe(30);
+    expect(deriveTableAngle(210, 2)).toBe(30);
+
+    // When table is at 0°:
+    expect(deriveTableAngle(0, 0)).toBe(0);
+    expect(deriveTableAngle(120, 1)).toBe(0);
+    expect(deriveTableAngle(240, 2)).toBe(0);
+  });
+
+  it('handles empty holes array gracefully', () => {
+    const plan = buildExecutionPlan([], {
+      stepRadialMm: 15,
+      stepAngleDeg: 30,
+    });
+
+    expect(plan.totalHoles).toBe(0);
+    expect(plan.totalPlunges).toBe(0);
+    expect(plan.bands).toHaveLength(0);
+    expect(plan.steps).toHaveLength(0);
+    expect(plan.totalRadialTravelMm).toBe(0);
+  });
+
+  it('strictly sorts radial bands descending (Outer -> Inner) eliminating Yo-Yo', () => {
+    // Simulate chaotic drilling: L1 (200mm) -> L3 (100mm) -> L2 (150mm) -> L1 again
+    const holes: PlanHole[] = [
+      // 1. Drilled at 200mm
+      { id: '1', layer: 0, r: 200, a: 330, head: 0, drilledAt: 100 },
+      { id: '2', layer: 0, r: 200, a: 90, head: 1, drilledAt: 100 },
+      { id: '3', layer: 0, r: 200, a: 210, head: 2, drilledAt: 100 },
+      // 2. Drilled at 100mm (jumped inward)
+      { id: '4', layer: 2, r: 100, a: 330, head: 0, drilledAt: 200 },
+      { id: '5', layer: 2, r: 100, a: 90, head: 1, drilledAt: 200 },
+      { id: '6', layer: 2, r: 100, a: 210, head: 2, drilledAt: 200 },
+      // 3. Drilled at 150mm (Yo-Yo outward!)
+      { id: '7', layer: 1, r: 150, a: 330, head: 0, drilledAt: 300 },
+      { id: '8', layer: 1, r: 150, a: 90, head: 1, drilledAt: 300 },
+      { id: '9', layer: 1, r: 150, a: 210, head: 2, drilledAt: 300 },
+    ];
+
+    const plan = buildExecutionPlan(holes, {
+      stepRadialMm: 25,
+      stepAngleDeg: 30,
+      ringRadii: [200, 150, 100],
+    });
+
+    expect(plan.totalHoles).toBe(9);
+    expect(plan.totalPlunges).toBe(3);
+    expect(plan.bands).toHaveLength(3);
+
+    // Bands must be strictly outer to inner
+    expect(plan.bands[0].nominalR).toBe(200);
+    expect(plan.bands[0].matchingLayerName).toBe('L1');
+
+    expect(plan.bands[1].nominalR).toBe(150);
+    expect(plan.bands[1].matchingLayerName).toBe('L2');
+
+    expect(plan.bands[2].nominalR).toBe(100);
+    expect(plan.bands[2].matchingLayerName).toBe('L3');
+
+    // Steps must never have deltaR > 0 (strictly non-positive)
+    for (const step of plan.steps) {
+      expect(step.deltaR).toBeLessThanOrEqual(0);
+    }
+
+    // Yo-Yo was eliminated from historical jump
+    expect(plan.yoYoReversalsEliminated).toBeGreaterThan(0);
+    expect(plan.totalRadialTravelMm).toBe(100); // 200 - 100 = 100mm
+  });
+
+  it('correctly identifies intermediate off-grid bands (e.g. 24mm split between layers)', () => {
+    const holes: PlanHole[] = [
+      // Standard layer 1 at 200mm
+      { id: '1', layer: 0, r: 200, a: 0, head: 0, drilledAt: 10 },
+      // Intermediate cut at 176mm (24mm inward)
+      { id: '2', layer: 0, r: 176, a: 0, head: 0, drilledAt: 20 },
+      // Standard layer 2 at 152mm (48mm inward from L1)
+      { id: '3', layer: 1, r: 152, a: 0, head: 0, drilledAt: 30 },
+    ];
+
+    const plan = buildExecutionPlan(holes, {
+      stepRadialMm: 24,
+      stepAngleDeg: 30,
+      ringRadii: [200, 152], // s = 48mm
+    });
+
+    expect(plan.bands).toHaveLength(3);
+    expect(plan.bands[0].nominalR).toBe(200);
+    expect(plan.bands[0].matchingLayerName).toBe('L1');
+
+    expect(plan.bands[1].nominalR).toBe(176);
+    expect(plan.bands[1].matchingLayerName).toBe('Off-grid');
+
+    expect(plan.bands[2].nominalR).toBe(152);
+    expect(plan.bands[2].matchingLayerName).toBe('L2');
+  });
+
+  it('groups 3 synchronized head holes at same table angle into single plunge step', () => {
+    // Plunge at table angle 45°
+    // head 0: a = 315°
+    // head 1: a = 75°
+    // head 2: a = 195°
+    const holes: PlanHole[] = [
+      { id: 'h0', layer: 0, r: 180, a: 315, head: 0, drilledAt: 1 },
+      { id: 'h1', layer: 0, r: 180, a: 75, head: 1, drilledAt: 1 },
+      { id: 'h2', layer: 0, r: 180, a: 195, head: 2, drilledAt: 1 },
+    ];
+
+    const plan = buildExecutionPlan(holes, {
+      stepRadialMm: 15,
+      stepAngleDeg: 15,
+    });
+
+    expect(plan.steps).toHaveLength(1);
+    expect(plan.steps[0].holesCount).toBe(3);
+    expect(plan.steps[0].isFullTriad).toBe(true);
+    expect(plan.steps[0].thetaDeg).toBe(45);
+    expect(plan.steps[0].heads).toEqual([0, 1, 2]);
+  });
+});
