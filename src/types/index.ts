@@ -15,6 +15,9 @@ export interface Point {
   y: number;
   bad: boolean;
   fired?: boolean; // هل تم حفر النقطة أم اعترضها قناع Repteur (الافتراضي true)
+  label?: string; // التسمية المعروضة على الثقب (مثلاً رقم خطوة CAM أو رقم الحلقة)
+  camStatus?: 'active' | 'done' | 'pending'; // حالة خطوة مسار CAM التفاعلي
+  isCamActive?: boolean; // هل هذا الثقب ينتمي للخطوة النشطة في مسار التشغيل
 }
 
 export interface Layer {

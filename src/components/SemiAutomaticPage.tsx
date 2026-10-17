@@ -20,6 +20,12 @@ import {
   Hash,
   ShieldAlert,
   Route,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  LocateFixed,
+  Eye,
 } from 'lucide-react';
 import { Translations, Language } from '../core/i18n';
 import { norm360, fmt } from '../core/model';
@@ -81,7 +87,7 @@ interface SemiAutoSavedState {
   holes?: SemiHole[];
 
   // Hole numbering display preference
-  numberingMode?: 'layer' | 'global';
+  numberingMode?: 'cam' | 'layer' | 'global';
 }
 
 function safeId(): string {
@@ -236,9 +242,11 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     return [];
   });
 
-  const [numberingMode, setNumberingMode] = useState<'layer' | 'global'>(() => {
+  const [numberingMode, setNumberingMode] = useState<'cam' | 'layer' | 'global'>(() => {
     const v = savedState.numberingMode;
-    return v === 'global' ? 'global' : 'layer';
+    if (v === 'global') return 'global';
+    if (v === 'layer') return 'layer';
+    return 'cam';
   });
 
   // 4.5 Optimal CAM Execution Plan (Outer -> Inner / Anti Yo-Yo)
@@ -249,6 +257,34 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       ringRadii,
     });
   }, [holes, stepRadialMm, stepAngleDeg, ringRadii]);
+
+  // CAM Step Playback & Interactive Simulation State
+  const [camPlaybackStep, setCamPlaybackStep] = useState<number | null>(null);
+  const [isPlayingCam, setIsPlayingCam] = useState<boolean>(false);
+
+  // Sync / Advance CAM playback automatically when playing
+  useEffect(() => {
+    if (!isPlayingCam || executionPlan.steps.length === 0) return;
+    const timer = window.setInterval(() => {
+      setCamPlaybackStep((prev) => {
+        const cur = prev ?? 0;
+        if (cur >= executionPlan.steps.length) {
+          setIsPlayingCam(false);
+          return 1;
+        }
+        return cur + 1;
+      });
+    }, 1100);
+    return () => clearInterval(timer);
+  }, [isPlayingCam, executionPlan.steps.length]);
+
+  // Clear playback if all holes are removed
+  useEffect(() => {
+    if (holes.length === 0 && camPlaybackStep !== null) {
+      setCamPlaybackStep(null);
+      setIsPlayingCam(false);
+    }
+  }, [holes.length, camPlaybackStep]);
 
   // Drawer & Dialog State
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
@@ -411,6 +447,26 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     [ringRadii, rHeadMinMm, onShowToast, t]
   );
 
+  // Sync live machine heads (rMm, thetaDeg) to selected CAM step
+  const handleSyncMachineToStep = useCallback(
+    (stepIdx?: number) => {
+      const targetIdx = stepIdx ?? camPlaybackStep ?? 1;
+      const st = executionPlan.steps[targetIdx - 1];
+      if (st) {
+        setRMm(st.rMm);
+        setThetaDeg(st.thetaDeg);
+        if (onShowToast) {
+          onShowToast(
+            isAr
+              ? `تمت مزامنة الآلة مع الخطوة #${st.stepIndex} (r=${st.rMm} مم، θ=${st.thetaDeg}°)`
+              : `Machine synchronisée sur l'étape #${st.stepIndex} (r=${st.rMm}mm, θ=${st.thetaDeg}°)`
+          );
+        }
+      }
+    },
+    [camPlaybackStep, executionPlan.steps, onShowToast, isAr]
+  );
+
   // Plunge Timer & State Handlers
   const plungeTimerRef = useRef<number | null>(null);
   const isPlungingRef = useRef<boolean>(false);
@@ -550,18 +606,24 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     const allPts: Point[] = [];
     const layerPtsMap: Point[][] = Array.from({ length: layersCount }, () => []);
 
+    // Build quick lookup map from hole ID to CAM execution step
+    const holeToStepMap = new Map<string, { stepIndex: number; bandIndex: number }>();
+    executionPlan.steps.forEach((st) => {
+      st.holes.forEach((h) => {
+        holeToStepMap.set(h.id, { stepIndex: st.stepIndex, bandIndex: st.bandIndex });
+      });
+    });
+
     // For each layer i (0 .. layersCount - 1) and each angle k * stepAngleDeg:
     ringRadii.forEach((ri, i) => {
       for (let k = 0; k < nPoints; k++) {
         const a = norm360(k * stepAngleDeg);
         const globalIndex = i * nPoints + k + 1; // 1-based stable immutable grid index
-        // When numberingMode === 'layer', k starts at 0 per layer so render.ts displays 1..nPoints (standard machine layout)
+        // When numberingMode === 'layer', k starts at 0 per layer so render.ts displays 1..nPoints
         // When numberingMode === 'global', displays 1..Total cumulative across all rings
         const pointK = numberingMode === 'global' ? globalIndex - 1 : k;
 
         // Invariant: Matching is strictly physical (rMatch && aMatch).
-        // Never allow layer index alone to match without radius, otherwise holes drilled on an outer ring
-        // would falsely appear as drilled on inner rings (such as rLast).
         const matchingHole = holes.find((h) => {
           const rMatch = Math.abs(h.r - ri) < 2.0;
           const aDiff = Math.abs(norm360(h.a) - a);
@@ -572,7 +634,30 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
         const rad = (a * Math.PI) / 180;
 
         if (matchingHole) {
-          // Drilled permanent hole with stable geometric number
+          const stepInfo = holeToStepMap.get(matchingHole.id);
+          let pointLabel: string | undefined;
+          if (numberingMode === 'cam') {
+            pointLabel = stepInfo ? `${stepInfo.stepIndex}` : String(pointK + 1);
+          } else if (numberingMode === 'global') {
+            pointLabel = String(globalIndex);
+          } else {
+            pointLabel = String(k + 1);
+          }
+
+          let camStatus: 'active' | 'done' | 'pending' | undefined;
+          let isCamActive = false;
+          if (camPlaybackStep !== null && stepInfo) {
+            if (stepInfo.stepIndex === camPlaybackStep) {
+              camStatus = 'active';
+              isCamActive = true;
+            } else if (stepInfo.stepIndex < camPlaybackStep) {
+              camStatus = 'done';
+            } else {
+              camStatus = 'pending';
+            }
+          }
+
+          // Drilled permanent hole with stable geometric number or CAM execution step
           const pt: Point = {
             x: ri * Math.cos(rad),
             y: ri * Math.sin(rad),
@@ -583,11 +668,15 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             j: 0,
             bad: false,
             fired: true,
+            label: pointLabel,
+            camStatus,
+            isCamActive,
           };
           layerPtsMap[i].push(pt);
           allPts.push(pt);
         } else {
-          // Available design position: GHOST RETICLE (fired: false) with same stable number
+          // Available design position: GHOST RETICLE (fired: false)
+          const ghostLabel = numberingMode === 'global' ? String(globalIndex) : String(k + 1);
           const pt: Point = {
             x: ri * Math.cos(rad),
             y: ri * Math.sin(rad),
@@ -598,6 +687,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             j: 0,
             bad: false,
             fired: false,
+            label: ghostLabel,
           };
           layerPtsMap[i].push(pt);
           allPts.push(pt);
@@ -624,6 +714,30 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             targetLayerIdx = idx;
           }
         });
+
+        const stepInfo = holeToStepMap.get(h.id);
+        let pointLabel: string | undefined;
+        if (numberingMode === 'cam') {
+          pointLabel = stepInfo ? `${stepInfo.stepIndex}` : String(hIdx + 1);
+        } else if (numberingMode === 'global') {
+          pointLabel = String(layersCount * nPoints + hIdx + 1);
+        } else {
+          pointLabel = String((hIdx % nPoints) + 1);
+        }
+
+        let camStatus: 'active' | 'done' | 'pending' | undefined;
+        let isCamActive = false;
+        if (camPlaybackStep !== null && stepInfo) {
+          if (stepInfo.stepIndex === camPlaybackStep) {
+            camStatus = 'active';
+            isCamActive = true;
+          } else if (stepInfo.stepIndex < camPlaybackStep) {
+            camStatus = 'done';
+          } else {
+            camStatus = 'pending';
+          }
+        }
+
         const pt: Point = {
           x: h.r * Math.cos(rad),
           y: h.r * Math.sin(rad),
@@ -634,6 +748,9 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
           j: 0,
           bad: false,
           fired: true,
+          label: pointLabel,
+          camStatus,
+          isCamActive,
         };
         layerPtsMap[targetLayerIdx]?.push(pt);
         allPts.push(pt);
@@ -681,30 +798,49 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     rLastR,
     sMm,
     numberingMode,
+    executionPlan,
+    camPlaybackStep,
   ]);
 
+  const activePlaybackStep =
+    camPlaybackStep !== null && executionPlan.steps[camPlaybackStep - 1]
+      ? executionPlan.steps[camPlaybackStep - 1]
+      : null;
+
   const semiAutoState: SimulationState = useMemo(() => {
+    const effectiveTheta = activePlaybackStep ? activePlaybackStep.thetaDeg : thetaDeg;
+    const effectiveR = activePlaybackStep ? activePlaybackStep.rMm : rMm;
+    const isPlungingOrStepActive = plungeDown || activePlaybackStep !== null;
+
     return {
-      theta: thetaDeg,
-      headR: rMm,
+      theta: effectiveTheta,
+      headR: effectiveR,
       // counts >= 9999 ensures points with fired: true are rendered as drilled
       counts: ringRadii.map(() => 99999),
       cur: {
-        type: plungeDown ? 'fire' : 'index',
+        type: isPlungingOrStepActive ? 'fire' : 'index',
         t0: 0,
         d: 0,
-        layer: currentLayer,
-        j: plungeDown ? 3 : 0,
-        r0: rMm,
-        r1: rMm,
-        th0: thetaDeg,
-        th1: thetaDeg,
-        fired: spindleOn && plungeDown,
+        layer: activePlaybackStep ? Math.max(0, activePlaybackStep.bandIndex - 1) : currentLayer,
+        j: isPlungingOrStepActive ? 3 : 0,
+        r0: effectiveR,
+        r1: effectiveR,
+        th0: effectiveTheta,
+        th1: effectiveTheta,
+        fired: spindleOn || activePlaybackStep !== null,
       },
       done: false,
-      u: 0,
+      u: isPlungingOrStepActive ? 1 : 0.8,
     };
-  }, [thetaDeg, rMm, ringRadii, plungeDown, currentLayer, spindleOn]);
+  }, [
+    activePlaybackStep,
+    thetaDeg,
+    rMm,
+    ringRadii,
+    plungeDown,
+    currentLayer,
+    spindleOn,
+  ]);
 
   // Card toggle renderer for parameters drawer
   const renderCard = (
@@ -893,22 +1029,34 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             </span>
           </div>
 
-          {/* Numbering Scheme Selector: Per-Layer (1..n) vs Global Continuous (1..N) */}
+          {/* Numbering Scheme Selector: CAM (Outer->Inner) vs Per-Layer (1..n) vs Global Continuous (1..N) */}
           <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex justify-between items-center">
               <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
-                <Hash className="w-3.5 h-3.5 text-blue-600" />
+                <Hash className="w-3.5 h-3.5 text-indigo-600" />
                 <span>{t.numberingModeLabel}</span>
               </label>
-              <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-bold">
-                {numberingMode === 'layer' ? '1 .. n' : '1 .. N'}
+              <span className="text-[10px] font-mono text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 font-bold">
+                {numberingMode === 'cam' ? 'CAM (خارج←داخل)' : numberingMode === 'layer' ? '1 .. n' : '1 .. N'}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-lg">
+            <div className="grid grid-cols-3 gap-1 p-1 bg-slate-200/70 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setNumberingMode('cam')}
+                className={`py-1.5 px-1 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center truncate ${
+                  numberingMode === 'cam'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title={t.numberingModeCam}
+              >
+                {isAr ? 'مسار CAM' : 'Mode CAM'}
+              </button>
               <button
                 type="button"
                 onClick={() => setNumberingMode('layer')}
-                className={`py-1.5 px-2 text-[11px] font-bold rounded-md transition-all cursor-pointer text-center ${
+                className={`py-1.5 px-1 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center truncate ${
                   numberingMode === 'layer'
                     ? 'bg-white text-blue-700 shadow-2xs ring-1 ring-blue-300'
                     : 'text-slate-600 hover:text-slate-900'
@@ -919,7 +1067,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
               <button
                 type="button"
                 onClick={() => setNumberingMode('global')}
-                className={`py-1.5 px-2 text-[11px] font-bold rounded-md transition-all cursor-pointer text-center ${
+                className={`py-1.5 px-1 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center truncate ${
                   numberingMode === 'global'
                     ? 'bg-white text-blue-700 shadow-2xs ring-1 ring-blue-300'
                     : 'text-slate-600 hover:text-slate-900'
@@ -1213,6 +1361,124 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             </div>
           </div>
 
+          {/* Interactive CAM Playback Controls inside Plan Card */}
+          {executionPlan.steps.length > 0 && (
+            <div className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-50/90 to-blue-50/90 border border-indigo-200/80 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-indigo-900 flex items-center gap-1.5">
+                  <Play className="w-3.5 h-3.5 text-indigo-600 fill-indigo-600" />
+                  <span>{t.camPlaybackTitle}</span>
+                </span>
+                {camPlaybackStep !== null && (
+                  <span className="text-[10px] font-mono font-extrabold bg-indigo-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                    {camPlaybackStep} / {executionPlan.totalPlunges}
+                  </span>
+                )}
+              </div>
+
+              {/* Step Scrubber Slider */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={1}
+                  max={Math.max(1, executionPlan.totalPlunges)}
+                  value={camPlaybackStep ?? 1}
+                  onChange={(e) => {
+                    const nextStep = Number(e.target.value);
+                    setCamPlaybackStep(nextStep);
+                  }}
+                  className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-indigo-200 rounded-lg"
+                />
+              </div>
+
+              {/* Playback Button Group */}
+              <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCamPlaybackStep((prev) => Math.max(1, (prev ?? 1) - 1));
+                    }}
+                    disabled={camPlaybackStep === 1}
+                    className="p-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-100 disabled:opacity-40 transition-all cursor-pointer shadow-2xs"
+                    title={t.camPrevStepBtn}
+                  >
+                    <SkipBack className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (camPlaybackStep === null) {
+                        setCamPlaybackStep(1);
+                      }
+                      setIsPlayingCam((prev) => !prev);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                      isPlayingCam
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
+                  >
+                    {isPlayingCam ? (
+                      <>
+                        <Pause className="w-3.5 h-3.5" />
+                        <span>{t.camPauseBtn}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-white" />
+                        <span>{t.camPlayBtn}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCamPlaybackStep((prev) =>
+                        Math.min(executionPlan.totalPlunges, (prev ?? 0) + 1)
+                      );
+                    }}
+                    disabled={camPlaybackStep === executionPlan.totalPlunges}
+                    className="p-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-100 disabled:opacity-40 transition-all cursor-pointer shadow-2xs"
+                    title={t.camNextStepBtn}
+                  >
+                    <SkipForward className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {camPlaybackStep !== null && (
+                    <button
+                      type="button"
+                      onClick={() => handleSyncMachineToStep(camPlaybackStep)}
+                      className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95 transition-all"
+                      title={t.camJumpMachineBtn}
+                    >
+                      <LocateFixed className="w-3 h-3" />
+                      <span>{isAr ? 'مزامنة الآلة' : 'Aligner'}</span>
+                    </button>
+                  )}
+
+                  {camPlaybackStep !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCamPlaybackStep(null);
+                        setIsPlayingCam(false);
+                      }}
+                      className="px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold cursor-pointer transition-colors"
+                      title={t.camExitPreviewBtn}
+                    >
+                      {isAr ? 'إلغاء' : 'Stop'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Bands Chips */}
           {executionPlan.bands.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-1">
@@ -1243,30 +1509,39 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
                 <span className="col-span-3">{t.planStepColTheta}</span>
                 <span className="col-span-3 text-right">{t.planStepColCommand}</span>
               </div>
-              {executionPlan.steps.map((st) => (
-                <div
-                  key={st.stepIndex}
-                  className="grid grid-cols-12 gap-1 px-1.5 py-1 rounded-lg bg-white border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors items-center"
-                >
-                  <span className="col-span-1 text-center font-bold text-indigo-700">
-                    {st.stepIndex}
-                  </span>
-                  <span className="col-span-2 text-[10px] text-slate-600 font-semibold truncate">
-                    B{st.bandIndex} <span className="text-[9px] text-slate-400">({st.matchingLayerName})</span>
-                  </span>
-                  <span className="col-span-3 font-semibold text-emerald-700">
-                    {st.rMm}mm
-                  </span>
-                  <span className="col-span-3 text-blue-700">
-                    {st.thetaDeg}°
-                  </span>
-                  <span className="col-span-3 text-right text-[10px] text-slate-500 truncate">
-                    {st.stepIndex === 1
-                      ? (isAr ? 'بدء (Start)' : 'Départ')
-                      : `${st.rPulses > 0 ? `R-(${st.rPulses}) ` : ''}${st.thetaPulses > 0 ? `T+(${st.thetaPulses})` : ''}` || '—'}
-                  </span>
-                </div>
-              ))}
+              {executionPlan.steps.map((st) => {
+                const isActive = camPlaybackStep === st.stepIndex;
+                return (
+                  <div
+                    key={st.stepIndex}
+                    onClick={() => setCamPlaybackStep(st.stepIndex)}
+                    className={`grid grid-cols-12 gap-1 px-1.5 py-1 rounded-lg border transition-all cursor-pointer items-center ${
+                      isActive
+                        ? 'bg-indigo-100/90 border-indigo-400 shadow-2xs ring-2 ring-indigo-300'
+                        : 'bg-white border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30'
+                    }`}
+                  >
+                    <span className="col-span-1 text-center font-bold text-indigo-700 flex items-center justify-center gap-0.5">
+                      {st.stepIndex}
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />}
+                    </span>
+                    <span className="col-span-2 text-[10px] text-slate-600 font-semibold truncate">
+                      B{st.bandIndex} <span className="text-[9px] text-slate-400">({st.matchingLayerName})</span>
+                    </span>
+                    <span className="col-span-3 font-semibold text-emerald-700">
+                      {st.rMm}mm
+                    </span>
+                    <span className="col-span-3 text-blue-700">
+                      {st.thetaDeg}°
+                    </span>
+                    <span className="col-span-3 text-right text-[10px] text-slate-500 truncate">
+                      {st.stepIndex === 1
+                        ? (isAr ? 'بدء (Start)' : 'Départ')
+                        : `${st.rPulses > 0 ? `R-(${st.rPulses}) ` : ''}${st.thetaPulses > 0 ? `T+(${st.thetaPulses})` : ''}` || '—'}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1569,6 +1844,97 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     </div>
   );
 
+  // Floating / Pinned CAM Playback Telemetry Banner
+  const camActiveBanner = activePlaybackStep ? (
+    <div className="flex-none p-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl shadow-lg border border-indigo-500/40 flex flex-col gap-2.5 animate-in fade-in duration-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+          <span className="text-xs font-bold font-mono tracking-wide text-cyan-300">
+            {isAr
+              ? `مسار CAM: خطوة ${activePlaybackStep.stepIndex} من ${executionPlan.totalPlunges}`
+              : `Pas CAM: ${activePlaybackStep.stepIndex} / ${executionPlan.totalPlunges}`}
+          </span>
+          <span className="text-[10px] font-mono bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/30">
+            B{activePlaybackStep.bandIndex} ({activePlaybackStep.matchingLayerName})
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => handleSyncMachineToStep(activePlaybackStep.stepIndex)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-2xs cursor-pointer active:scale-95 transition-all"
+            title={t.camJumpMachineBtn}
+          >
+            <LocateFixed className="w-3.5 h-3.5" />
+            <span>{isAr ? 'مزامنة الآلة' : 'Aligner'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setCamPlaybackStep(null);
+              setIsPlayingCam(false);
+            }}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title={t.camExitPreviewBtn}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center pt-1.5 border-t border-white/10 text-xs">
+        {/* Step movement instructions */}
+        <div className="sm:col-span-2 flex items-center flex-wrap gap-2 font-mono text-[11px] text-slate-200">
+          <span className="text-cyan-400 font-extrabold">r = {activePlaybackStep.rMm}mm</span>
+          <span className="text-slate-500">|</span>
+          <span className="text-blue-300 font-extrabold">θ = {activePlaybackStep.thetaDeg}°</span>
+          <span className="text-slate-500">|</span>
+          <span className="text-amber-300 font-semibold truncate">
+            {activePlaybackStep.stepIndex === 1
+              ? (isAr ? 'بدء الحفر (الحلقة الخارجية)' : 'Départ anneau externe')
+              : `${activePlaybackStep.rPulses > 0 ? `R-(${activePlaybackStep.rPulses} نقرة) ` : 'نفس القطر '}${activePlaybackStep.thetaPulses > 0 ? `T+(${activePlaybackStep.thetaPulses} نقرة) ` : ''}→ حفر P`}
+          </span>
+        </div>
+
+        {/* Quick step controls */}
+        <div className="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={() => setCamPlaybackStep((prev) => Math.max(1, (prev ?? 1) - 1))}
+            disabled={activePlaybackStep.stepIndex === 1}
+            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 cursor-pointer text-white"
+            title={t.camPrevStepBtn}
+          >
+            <SkipBack className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsPlayingCam((prev) => !prev)}
+            className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 cursor-pointer text-white font-bold flex items-center gap-1 shadow-2xs"
+          >
+            {isPlayingCam ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-white" />}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setCamPlaybackStep((prev) =>
+                Math.min(executionPlan.totalPlunges, (prev ?? 0) + 1)
+              )
+            }
+            disabled={activePlaybackStep.stepIndex === executionPlan.totalPlunges}
+            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 cursor-pointer text-white"
+            title={t.camNextStepBtn}
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
       className="flex flex-col gap-3 max-w-5xl mx-auto w-full h-full min-h-0 select-none overflow-hidden"
@@ -1587,6 +1953,9 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
       {/* 1. Mobile Single Column View (< lg) */}
       <div className="flex flex-col lg:hidden gap-3.5 h-full min-h-0 select-none">
+        {/* Active CAM Playback Banner */}
+        {camActiveBanner}
+
         {/* Canvas Stage */}
         <div className="flex-none w-full">
           <CanvasStage
@@ -1687,6 +2056,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
         </aside>
 
         <main className="w-full min-w-0 flex flex-col gap-4">
+          {camActiveBanner}
           <CanvasStage
             model={semiAutoModel}
             state={semiAutoState}

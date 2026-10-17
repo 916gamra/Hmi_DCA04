@@ -378,9 +378,19 @@ export interface Translations {
   cardSemiTimingTitle: string;
   cardSemiModesTitle: string;
   numberingModeLabel: string;
+  numberingModeCam: string;
   numberingModeLayer: string;
   numberingModeGlobal: string;
   numberingModeHint: string;
+  camPlaybackTitle: string;
+  camPlaybackStepOf: string;
+  camPlayBtn: string;
+  camPauseBtn: string;
+  camPrevStepBtn: string;
+  camNextStepBtn: string;
+  camJumpMachineBtn: string;
+  camExitPreviewBtn: string;
+  camStepTriadFired: string;
   cardSemiSafetyTitle: string;
   rHeadMinLabel: string;
   rHeadMinHint: string;
@@ -790,9 +800,19 @@ export const translations: Record<Language, Translations> = {
     cardSemiTimingTitle: 'التوقيت والسرعة (Vitesse & Temporisation)',
     cardSemiModesTitle: 'أوضاع الآلة (Modes machine)',
     numberingModeLabel: 'نمط ترقيم الثقوب',
+    numberingModeCam: 'مسار CAM التنفيذي (1..الضربات من الخارج للداخل)',
     numberingModeLayer: 'لكل حلقة (1..n)',
     numberingModeGlobal: 'تراكمي شامل (1..N)',
-    numberingModeHint: 'الترقيم لكل حلقة يطابق فيزياء الرؤوس الثلاثية ويقلل الخطوات',
+    numberingModeHint: 'ترقيم مسار CAM الحتمي يرتب الثقوب بدقة حسب تسلسل تنفيذ الآلة ويوفر حركات الارتداد',
+    camPlaybackTitle: 'محاكي مسار التشغيل خطوة بخطوة (CAM Step Playback)',
+    camPlaybackStepOf: 'خطوة {current} من {total}',
+    camPlayBtn: 'تشغيل المحاكاة',
+    camPauseBtn: 'إيقاف مؤقت',
+    camPrevStepBtn: 'الخطوة السابقة',
+    camNextStepBtn: 'الخطوة التالية',
+    camJumpMachineBtn: 'مزامنة الآلة الحية مع الخطوة',
+    camExitPreviewBtn: 'العودة للتحكم اليدوي',
+    camStepTriadFired: 'الرؤوس المفعلة في الضربة: {heads}',
     cardSemiSafetyTitle: 'حدود الأمان ومسافة الرؤوس (Sécurité)',
     rHeadMinLabel: 'حد أدنى شعاع الرؤوس (r min أمان)',
     rHeadMinHint: 'أقرب مسافة ميكانيكية مسموحة للرؤوس نحو المركز لتفادي الاصطدام. مستقلة تماماً عن آخر حلقة تصميمية.',
@@ -1200,9 +1220,19 @@ export const translations: Record<Language, Translations> = {
     cardSemiTimingTitle: 'Temporisation et vitesse',
     cardSemiModesTitle: 'Modes machine',
     numberingModeLabel: 'Mode de numérotation',
+    numberingModeCam: 'Ordre CAM Exécution (1..Plongées Ext->Int)',
     numberingModeLayer: 'Par anneau (1..n)',
     numberingModeGlobal: 'Cumulatif global (1..N)',
-    numberingModeHint: 'La numérotation par anneau respecte la géométrie 3 têtes et optimise les passes',
+    numberingModeHint: 'Le mode CAM numérote selon l’ordre optimal d’exécution sans va-et-vient radial',
+    camPlaybackTitle: 'Simulateur pas-à-pas du plan CAM',
+    camPlaybackStepOf: 'Étape {current} sur {total}',
+    camPlayBtn: 'Lancer l’animation',
+    camPauseBtn: 'Pause',
+    camPrevStepBtn: 'Étape précédente',
+    camNextStepBtn: 'Étape suivante',
+    camJumpMachineBtn: 'Aligner la machine réelle sur cette étape',
+    camExitPreviewBtn: 'Retour au contrôle manuel',
+    camStepTriadFired: 'Têtes actives : {heads}',
     cardSemiSafetyTitle: 'Sécurité & Butée mécanique',
     rHeadMinLabel: 'Rayon minimal des têtes (r min sécurité)',
     rHeadMinHint: 'Limite mécanique absolue vers le centre pour éviter la collision entre les têtes. Indépendante de l’anneau rLast.',

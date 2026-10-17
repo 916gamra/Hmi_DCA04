@@ -566,13 +566,34 @@ export function renderCanvas(
         ctx.stroke();
       }
 
-      // Point index label if zoomed in sufficiently
-      if (options.labels && rp >= 8.5) {
+      // Active CAM execution step highlight
+      if (q.camStatus === 'active' || q.isCamActive) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, rp + 5.5, 0, Math.PI * 2);
+        ctx.strokeStyle = '#06b6d4'; // Cyan-500 high-visibility ring
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x, y, rp + 8.5, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.45)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 2.5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Point index label if zoomed in sufficiently or if custom label exists
+      if (options.labels && rp >= 6.5) {
         ctx.fillStyle = isDrilled ? palette.holeLabelDrilled : palette.holeLabelPending;
-        ctx.font = `600 ${Math.min(rp * 1.05, 12)}px JetBrains Mono, monospace`;
+        const fontSize = Math.min(Math.max(rp * 1.0, 9), 13);
+        ctx.font = `600 ${fontSize}px JetBrains Mono, monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(String(q.k + 1), x, y + 0.5);
+        const labelText = q.label ?? String(q.k + 1);
+        ctx.fillText(labelText, x, y + 0.5);
       }
     }
   });

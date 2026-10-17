@@ -130,4 +130,38 @@ describe('Execution Plan Engine (CAM Outer -> Inner)', () => {
     expect(plan.steps[0].thetaDeg).toBe(45);
     expect(plan.steps[0].heads).toEqual([0, 1, 2]);
   });
+
+  it('guarantees sequential 1-based stepIndex for each plunge in outer-to-inner plan', () => {
+    const holes: PlanHole[] = [
+      // Outer ring 200mm, 2 plunges
+      { id: 'h1', layer: 0, r: 200, a: 0, head: 0, drilledAt: 1 },
+      { id: 'h2', layer: 0, r: 200, a: 30, head: 0, drilledAt: 2 },
+      // Inner ring 150mm, 2 plunges
+      { id: 'h3', layer: 1, r: 150, a: 0, head: 0, drilledAt: 3 },
+      { id: 'h4', layer: 1, r: 150, a: 30, head: 0, drilledAt: 4 },
+    ];
+
+    const plan = buildExecutionPlan(holes, {
+      stepRadialMm: 25,
+      stepAngleDeg: 30,
+    });
+
+    expect(plan.steps).toHaveLength(4);
+    expect(plan.steps.map((s) => s.stepIndex)).toEqual([1, 2, 3, 4]);
+
+    // First two steps are on 200mm, last two are on 150mm
+    expect(plan.steps[0].rMm).toBe(200);
+    expect(plan.steps[1].rMm).toBe(200);
+    expect(plan.steps[2].rMm).toBe(150);
+    expect(plan.steps[3].rMm).toBe(150);
+
+    // Hole IDs can be looked up to identify exact stepIndex
+    const holeToStep = new Map<string, number>();
+    plan.steps.forEach((s) => s.holes.forEach((h) => holeToStep.set(h.id, s.stepIndex)));
+
+    expect(holeToStep.get('h1')).toBe(1);
+    expect(holeToStep.get('h2')).toBe(2);
+    expect(holeToStep.get('h3')).toBe(3);
+    expect(holeToStep.get('h4')).toBe(4);
+  });
 });
