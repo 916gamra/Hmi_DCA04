@@ -377,6 +377,10 @@ export interface Translations {
   cardSemiPtsTitle: string;
   cardSemiTimingTitle: string;
   cardSemiModesTitle: string;
+  numberingModeLabel: string;
+  numberingModeLayer: string;
+  numberingModeGlobal: string;
+  numberingModeHint: string;
   spindleOffWarning: string;
   maxHolesReachedWarning: string;
   undoLastPlungeBtn: string;
@@ -397,6 +401,8 @@ export interface Translations {
   stepAngleIndexingLabel: string;
   nPointsCircleLabel: string;
   derivedSpacingBadge: string;
+  radialPressesHelper: string;
+  stepVsSpacingNote: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -762,6 +768,10 @@ export const translations: Record<Language, Translations> = {
     cardSemiPtsTitle: 'توزيع النقاط والزوايا (Angles & Pas)',
     cardSemiTimingTitle: 'التوقيت والسرعة (Vitesse & Temporisation)',
     cardSemiModesTitle: 'أوضاع الآلة (Modes machine)',
+    numberingModeLabel: 'نمط ترقيم الثقوب',
+    numberingModeLayer: 'لكل حلقة (1..n)',
+    numberingModeGlobal: 'تراكمي شامل (1..N)',
+    numberingModeHint: 'الترقيم لكل حلقة يطابق فيزياء الرؤوس الثلاثية ويقلل الخطوات',
     spindleOffWarning: 'تنبيه: يجب تشغيل رؤوس التزيين (Spindle ON) قبل الحفر!',
     maxHolesReachedWarning: 'تم الوصول للحد الأقصى للثقوب (1500 ثقب)!',
     undoLastPlungeBtn: 'تراجع (3 ثقوب)',
@@ -782,6 +792,8 @@ export const translations: Record<Language, Translations> = {
     stepAngleIndexingLabel: 'خطوة فهرسة الطاولة (θ)',
     nPointsCircleLabel: 'عدد نقاط الحلقة (n)',
     derivedSpacingBadge: 'تباعد هندسي مشتق (s)',
+    radialPressesHelper: 'بين حلقتين متتاليتين: s = {s} مم → حوالي {n} ضغطة r± (بخطوة {step} مم)',
+    stepVsSpacingNote: 'المسافة بين الحلقات s مشتقة هندسياً، بينما خطوة الزر r± حرة ومستقلة لتمنحك تحكماً ميدانياً مرناً.',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -1145,6 +1157,10 @@ export const translations: Record<Language, Translations> = {
     cardSemiPtsTitle: 'Répartition des points & ANGLES',
     cardSemiTimingTitle: 'Temporisation et vitesse',
     cardSemiModesTitle: 'Modes machine',
+    numberingModeLabel: 'Mode de numérotation',
+    numberingModeLayer: 'Par anneau (1..n)',
+    numberingModeGlobal: 'Cumulatif global (1..N)',
+    numberingModeHint: 'La numérotation par anneau respecte la géométrie 3 têtes et optimise les passes',
     spindleOffWarning: 'Attention : Activez la broche (Spindle ON) avant de percer !',
     maxHolesReachedWarning: 'Limite maximale de trous atteinte (1500 trous) !',
     undoLastPlungeBtn: 'Annuler (3 trous)',
@@ -1165,5 +1181,7 @@ export const translations: Record<Language, Translations> = {
     stepAngleIndexingLabel: 'Pas d’indexation table (θ)',
     nPointsCircleLabel: 'Points par cercle (n)',
     derivedSpacingBadge: 'Espacement s calculé',
+    radialPressesHelper: 'Entre deux couches : s = {s} mm → env. {n} impulsions r± (pas de {step} mm)',
+    stepVsSpacingNote: 'L’espacement s est calculé géométriquement, tandis que le pas r± reste indépendant pour un pilotage précis.',
   },
 };

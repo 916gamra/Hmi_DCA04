@@ -16,7 +16,8 @@ import {
   Compass,
   BarChart3,
   Sliders,
-  Target
+  Target,
+  Hash,
 } from 'lucide-react';
 import { Translations, Language } from '../core/i18n';
 import { norm360, fmt } from '../core/model';
@@ -29,6 +30,7 @@ import { TrayModel, SimulationState, ViewOptions, Point, TrayParams } from '../t
 
 export interface SemiHole {
   id: string;
+  globalIndex?: number; // 1-based stable grid number
   layer: number;
   r: number;
   a: number; // Tray coordinate angle (0..360°)
@@ -71,6 +73,9 @@ interface SemiAutoSavedState {
 
   // Holes memory
   holes?: SemiHole[];
+
+  // Hole numbering display preference
+  numberingMode?: 'layer' | 'global';
 }
 
 function safeId(): string {
@@ -217,6 +222,11 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     return [];
   });
 
+  const [numberingMode, setNumberingMode] = useState<'layer' | 'global'>(() => {
+    const v = savedState.numberingMode;
+    return v === 'global' ? 'global' : 'layer';
+  });
+
   // Drawer & Dialog State
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState<boolean>(false);
@@ -280,6 +290,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       expHz,
       currentLayer,
       holes,
+      numberingMode,
     };
     safeStorage.setJSON(STORAGE_KEY_SEMI, payload);
   }, [
@@ -298,6 +309,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     expHz,
     currentLayer,
     holes,
+    numberingMode,
   ]);
 
   // Clamping safety checks
@@ -389,8 +401,26 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
 
     const newHoles: SemiHole[] = HEADS.map((hConfig, headIdx) => {
       const aTray = norm360(hConfig.angle - thetaDeg);
+
+      // Match closest angular grid index k
+      let closestK = 0;
+      let minADiff = Infinity;
+      for (let k = 0; k < nPoints; k++) {
+        const targetA = norm360(k * stepAngleDeg);
+        const aDiff = Math.abs(norm360(aTray) - targetA);
+        const angDist = Math.min(aDiff, 360 - aDiff);
+        if (angDist < minADiff) {
+          minADiff = angDist;
+          closestK = k;
+        }
+      }
+
+      const isGridMatch = minDiff < 2.5 && minADiff < 0.75;
+      const globalIndex = isGridMatch ? assignedLayer * nPoints + closestK + 1 : undefined;
+
       return {
         id: safeId(),
+        globalIndex,
         layer: assignedLayer,
         r: rMm,
         a: aTray,
@@ -412,7 +442,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       );
       return [...prev, ...filteredNew];
     });
-  }, [holes.length, currentLayer, ringRadii, rMm, thetaDeg, onShowToast, t.maxHolesReachedWarning]);
+  }, [holes.length, currentLayer, ringRadii, rMm, thetaDeg, nPoints, stepAngleDeg, onShowToast, t.maxHolesReachedWarning]);
 
   const handlePlungeDown = useCallback(() => {
     if (isPlungingRef.current) return;
@@ -481,6 +511,10 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     ringRadii.forEach((ri, i) => {
       for (let k = 0; k < nPoints; k++) {
         const a = norm360(k * stepAngleDeg);
+        const globalIndex = i * nPoints + k + 1; // 1-based stable immutable grid index
+        // When numberingMode === 'layer', k starts at 0 per layer so render.ts displays 1..nPoints (standard machine layout)
+        // When numberingMode === 'global', displays 1..Total cumulative across all rings
+        const pointK = numberingMode === 'global' ? globalIndex - 1 : k;
 
         // Invariant: Matching is strictly physical (rMatch && aMatch).
         // Never allow layer index alone to match without radius, otherwise holes drilled on an outer ring
@@ -495,13 +529,13 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
         const rad = (a * Math.PI) / 180;
 
         if (matchingHole) {
-          // Drilled permanent hole
+          // Drilled permanent hole with stable geometric number
           const pt: Point = {
             x: ri * Math.cos(rad),
             y: ri * Math.sin(rad),
             a: matchingHole.a,
             layer: i,
-            k: allPts.length,
+            k: pointK,
             head: matchingHole.head,
             j: 0,
             bad: false,
@@ -510,13 +544,13 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
           layerPtsMap[i].push(pt);
           allPts.push(pt);
         } else {
-          // Available design position: GHOST RETICLE (fired: false)
+          // Available design position: GHOST RETICLE (fired: false) with same stable number
           const pt: Point = {
             x: ri * Math.cos(rad),
             y: ri * Math.sin(rad),
             a,
             layer: i,
-            k: allPts.length,
+            k: pointK,
             head: 0,
             j: 0,
             bad: false,
@@ -529,7 +563,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     });
 
     // Also include any holes in holes[] that were drilled off-grid so no user data is ever lost
-    holes.forEach((h) => {
+    holes.forEach((h, hIdx) => {
       const isAccounted = allPts.some(
         (p) =>
           p.fired &&
@@ -552,7 +586,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
           y: h.r * Math.sin(rad),
           a: h.a,
           layer: targetLayerIdx,
-          k: allPts.length,
+          k: numberingMode === 'global' ? layersCount * nPoints + hIdx : (hIdx % nPoints),
           head: h.head,
           j: 0,
           bad: false,
@@ -603,6 +637,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     r1,
     rLastR,
     sMm,
+    numberingMode,
   ]);
 
   const semiAutoState: SimulationState = useMemo(() => {
@@ -743,6 +778,29 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             </span>
           </div>
 
+          {/* Assistant Indicator: Presses between layers N ≈ s / stepRadial */}
+          {layersCount > 1 && sMm > 0 && (
+            <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs flex flex-col gap-1.5">
+              <div className="flex items-center justify-between font-bold text-slate-800">
+                <span className="flex items-center gap-1.5 text-blue-900 text-[11px] sm:text-xs">
+                  <Sliders className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span>
+                    {t.radialPressesHelper
+                      .replace('{s}', fmt(sMm, 1))
+                      .replace('{n}', String(Number((sMm / Math.max(0.1, stepRadialMm)).toFixed(1))))
+                      .replace('{step}', String(stepRadialMm))}
+                  </span>
+                </span>
+                <span className="font-mono text-xs font-extrabold text-blue-700 bg-white px-2 py-0.5 rounded-md border border-blue-200 shrink-0 shadow-2xs">
+                  ≈ {(sMm / Math.max(0.1, stepRadialMm)).toFixed(1)} × r±
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500 leading-tight">
+                {t.stepVsSpacingNote}
+              </span>
+            </div>
+          )}
+
           {/* Summary pill of R1 and R_last */}
           <div className="p-2 rounded-xl bg-blue-50/70 border border-blue-100 text-[11px] font-mono text-blue-900 flex justify-between">
             <span>R₁ = {fmt(r1, 1)} mm</span>
@@ -792,19 +850,69 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
             </span>
           </div>
 
+          {/* Numbering Scheme Selector: Per-Layer (1..n) vs Global Continuous (1..N) */}
+          <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex justify-between items-center">
+              <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5 text-blue-600" />
+                <span>{t.numberingModeLabel}</span>
+              </label>
+              <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-bold">
+                {numberingMode === 'layer' ? '1 .. n' : '1 .. N'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setNumberingMode('layer')}
+                className={`py-1.5 px-2 text-[11px] font-bold rounded-md transition-all cursor-pointer text-center ${
+                  numberingMode === 'layer'
+                    ? 'bg-white text-blue-700 shadow-2xs ring-1 ring-blue-300'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {t.numberingModeLayer}
+              </button>
+              <button
+                type="button"
+                onClick={() => setNumberingMode('global')}
+                className={`py-1.5 px-2 text-[11px] font-bold rounded-md transition-all cursor-pointer text-center ${
+                  numberingMode === 'global'
+                    ? 'bg-white text-blue-700 shadow-2xs ring-1 ring-blue-300'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {t.numberingModeGlobal}
+              </button>
+            </div>
+            <span className="text-[10px] text-slate-500 leading-tight">
+              {t.numberingModeHint}
+            </span>
+          </div>
+
           {/* Jog step for r± remote button ONLY */}
           <div>
-            <label className="block text-[11px] font-semibold text-[#475569] mb-1">
-              {t.stepRadialLabel} (r±)
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] font-semibold text-[#475569]">
+                {t.stepRadialLabel} (r±)
+              </label>
+              {layersCount > 1 && sMm > 0 && (
+                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                  {fmt(sMm, 1)}mm ÷ {stepRadialMm}mm = {(sMm / Math.max(0.1, stepRadialMm)).toFixed(1)} clicks
+                </span>
+              )}
+            </div>
             <NumberStepper
               value={stepRadialMm}
               min={1}
-              max={50}
+              max={100}
               step={1}
               unit="mm"
               onChange={(val) => setStepRadialMm(Math.max(1, val))}
             />
+            <span className="text-[10px] text-slate-400 block mt-1">
+              {t.stepVsSpacingNote}
+            </span>
           </div>
 
           {/* Active Layer Selection Pills + Go To Radius button */}
