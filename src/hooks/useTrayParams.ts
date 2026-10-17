@@ -10,6 +10,23 @@ const LEGACY_STORAGE_KEY_V4 = 'hmi-tray-designer-oneui8-v4';
 const LEGACY_STORAGE_KEY_V3 = 'hmi-tray-designer-oneui8-v3';
 const LEGACY_STORAGE_KEY_V2 = 'hmi-tray-designer-oneui8-v2';
 
+/**
+ * Pure state updater for TrayParams.
+ * Guarantees that:
+ * 1. stepAngle is NEVER zeroed (must remain strictly > 0 for physical indexing and validation).
+ * 2. In continue + custom mode, layer 0 acts as angular origin reference (off = 0).
+ */
+export function applyTrayParamUpdates(prev: TrayParams, updated: Partial<TrayParams>): TrayParams {
+  const next = normalizeAndHydrateParams({ ...prev, ...updated });
+  // If tableMode is 'continue' and mode is 'custom', angular offset on layer 0 is the reference (off = 0)
+  if (next.tableMode === 'continue' && next.mode === 'custom' && next.custom && next.custom.length > 0) {
+    if (next.custom[0].off !== 0) {
+      next.custom[0] = { ...next.custom[0], off: 0 };
+    }
+  }
+  return next;
+}
+
 export function useTrayParams() {
   const [params, setParams] = useState<TrayParams>(() => {
     // 1. Attempt reading active schema (v5) via safeStorage
@@ -17,6 +34,14 @@ export function useTrayParams() {
       const savedV5 = safeStorage.getItem(STORAGE_KEY);
       if (savedV5) {
         const parsed = JSON.parse(savedV5);
+        // Self-heal legacy corrupted stepAngle <= 0 if present from prior buggy saves
+        if (parsed && Array.isArray(parsed.custom)) {
+          for (const c of parsed.custom) {
+            if (c && typeof c.stepAngle === 'number' && c.stepAngle <= 0) {
+              delete c.stepAngle;
+            }
+          }
+        }
         const validated = validateRecipeParams(parsed);
         if (validated.ok) {
           return normalizeAndHydrateParams(parsed);
@@ -77,16 +102,7 @@ export function useTrayParams() {
   }, [params]);
 
   const updateParams = useCallback((updated: Partial<TrayParams>) => {
-    setParams((prev) => {
-      const next = normalizeAndHydrateParams({ ...prev, ...updated });
-      // If tableMode is 'continue' and mode is 'custom', addAngle on layer 0 must be 0
-      if (next.tableMode === 'continue' && next.mode === 'custom' && next.custom && next.custom.length > 0) {
-        if (next.custom[0].stepAngle !== undefined && next.custom[0].stepAngle !== 0) {
-          next.custom[0] = { ...next.custom[0], stepAngle: 0 };
-        }
-      }
-      return next;
-    });
+    setParams((prev) => applyTrayParamUpdates(prev, updated));
   }, []);
 
   const resetDefaultParams = useCallback(() => {
