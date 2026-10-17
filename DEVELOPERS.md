@@ -77,7 +77,7 @@
     │   ├── usePWAInstall.ts    # التقاط حدث beforeinstallprompt واكتشاف وضع standalone و iOS
     │   ├── useNotifications.ts # نظام الإشعارات المحلية (Client-Side Local Notifications API)
     │   ├── useOnlineStatus.ts  # مراقبة حالة الاتصال بالشبكة (Online/Offline)
-    │   └── useDeviceDetection.ts # التكيف مع الهواتف والأجهزة اللوحية وشاشات اللمس
+    │   └── useSemiAutoState.ts # إدارة حالة الوضع شبه التلقائي (Semi-Auto) وحفظ المعاملات مؤقتاً
     └── components/             # مكونات الواجهة (Samsung One UI 8 Light Design System)
         ├── CanvasStage.tsx     # مسرح الكانفس التفاعلي (Pan, Pinch-Zoom, Hit-Testing, Theme & Dimensions Toolbar)
         ├── TouchWinScreenMirror.tsx # محاكي شاشات TouchWin OP320 الـ 7 الحقيقية وبطاقة الوصفة
@@ -185,25 +185,27 @@ $$d(A, B) = \sqrt{(x_A - x_B)^2 + (y_A - y_B)^2}$$
    - يتيح ذلك مشاركة رابط مباشر لوضع معين أو استخدام أزرار الرجوع/التقدم في المتصفح والهاتف بسلاسة.
 
 2. **التخزين المرقّم للمعاملات (`Versioned LocalStorage`)**:
-   - يحفظ `useTrayParams.ts` إعدادات الصينية في المفتاح `hmi-tray-params-v6` مع التحقق من صحة القيم واستعادة الإعدادات المصنعية الآمنة في حال تلف البيانات.
+   - يحفظ `useTrayParams.ts` إعدادات الصينية في المفتاح `hmi-tray-designer-oneui8-v5` (مع دعم ترحيل المفاتيح القديمة `v4`, `v3`, `v2`) مع التحقق من صحة القيم واستعادة الإعدادات المصنعية الآمنة في حال تلف البيانات.
    - يحفظ `usePresets.ts` الوصفات المخصصة في المفتاح `hmi-tray-custom-presets-v1`.
 
 ---
 
 ## 8. منظومة الاختبارات والتحقق الهندسي (`Vitest Test Suite`)
 
-يضم المشروع **159 اختباراً آلياً** في `src/core/__tests__/` تضمن عدم حدوث أي تراجع (`Regression`) في الحسابات الهندسية أو مخرجات الآلة:
+يضم المشروع **193 اختباراً آلياً** في `src/core/__tests__/` تضمن عدم حدوث أي تراجع (`Regression`) في الحسابات الهندسية أو مخرجات الآلة:
 
 | ملف الاختبار | عدد الاختبارات | النطاق المختبر |
 | :--- | :--- | :--- |
 | `math.test.ts` | **74** | الدوال الرياضية (`clamp`, `clampInt`, `norm360`, `sanitizeN`, `toMm`, `ease`, `fmt`, `fmtTime`) وحالات الحدود (`±Infinity`, `NaN`, `-0`). |
-| `model.test.ts` | **43** | بناء النموذج الهندسي (`buildModel`)، أنصاف الأقطار، الزوايا، تناظر الرؤوس الثلاثة بزاوية `120°`، كشف التداخل، و300 اختبار عشوائي ببذرة ثابتة (`Seeded PRNG Invariants`). |
-| `timeline.test.ts` | **23** | اتصال الحركات الزمنية بدون فجوات (`repos`, `index`, `fire`)، دقة `stateAt(t)` عند الحدود، وأحادية زيادة عدادات الحفر. |
-| `recipe.test.ts` | **19** | دقة محاذاة أعمدة `ANGLE PARAMETERS` (7 طبقات) و`AUTO PARAMETERS` في `buildRecipeText` مع اختبار `Inline Snapshot`. |
+| `model.test.ts` | **54** | بناء النموذج الهندسي (`buildModel`)، أنصاف الأقطار، الزوايا، تناظر الرؤوس الثلاثة بزاوية `120°`، كشف التداخل، و300 اختبار عشوائي ببذرة ثابتة (`Seeded PRNG Invariants`). |
+| `timeline.test.ts` | **29** | اتصال الحركات الزمنية بدون فجوات (`repos`, `index`, `fire`)، دقة `stateAt(t)` عند الحدود، وأحادية زيادة عدادات الحفر. |
+| `recipe.test.ts` | **27** | دقة محاذاة أعمدة `ANGLE PARAMETERS` (7 طبقات) و`AUTO PARAMETERS` في `buildRecipeText` مع اختبار `Inline Snapshot`. |
+| `plan.test.ts` | **6** | اختبارات خطط التنفيذ الآلي والمسارات. |
+| `useTrayParams.test.ts` | **3** | اختبارات معاملات الصينية ومعالجة حالات `continue` + `custom` وحفظ stepAngle. |
 
 ### أوامر التشغيل للمطورين:
 ```bash
-# تشغيل جميع الاختبارات (159 اختباراً)
+# تشغيل جميع الاختبارات (193 اختباراً)
 npm test
 
 # تشغيل الاختبارات في وضع المراقبة المستمرة أثناء التطوير
