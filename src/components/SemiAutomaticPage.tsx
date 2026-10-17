@@ -376,11 +376,22 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       return;
     }
 
+    // Invariant: layer tag strictly reflects the physically closest concentric ring ri to actual rMm
+    let assignedLayer = currentLayer;
+    let minDiff = Infinity;
+    ringRadii.forEach((ri, idx) => {
+      const diff = Math.abs(ri - rMm);
+      if (diff < minDiff) {
+        minDiff = diff;
+        assignedLayer = idx;
+      }
+    });
+
     const newHoles: SemiHole[] = HEADS.map((hConfig, headIdx) => {
       const aTray = norm360(hConfig.angle - thetaDeg);
       return {
         id: safeId(),
-        layer: currentLayer,
+        layer: assignedLayer,
         r: rMm,
         a: aTray,
         head: headIdx as 0 | 1 | 2,
@@ -388,20 +399,20 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       };
     });
 
-    // Prevent identical duplicate holes on the same layer, radius and angle
+    // Prevent identical duplicate holes on the same radius and angle
     setHoles((prev) => {
       const filteredNew = newHoles.filter(
         (nh) =>
-          !prev.some(
-            (ph) =>
-              ph.layer === nh.layer &&
-              Math.abs(ph.r - nh.r) < 1.0 &&
-              Math.abs(norm360(ph.a) - norm360(nh.a)) < 0.5
-          )
+          !prev.some((ph) => {
+            const rSame = Math.abs(ph.r - nh.r) < 1.0;
+            const aDiff = Math.abs(norm360(ph.a) - norm360(nh.a));
+            const aSame = Math.min(aDiff, 360 - aDiff) < 0.5;
+            return rSame && aSame;
+          })
       );
       return [...prev, ...filteredNew];
     });
-  }, [holes.length, currentLayer, rMm, thetaDeg, onShowToast, t.maxHolesReachedWarning]);
+  }, [holes.length, currentLayer, ringRadii, rMm, thetaDeg, onShowToast, t.maxHolesReachedWarning]);
 
   const handlePlungeDown = useCallback(() => {
     if (isPlungingRef.current) return;
@@ -471,12 +482,14 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       for (let k = 0; k < nPoints; k++) {
         const a = norm360(k * stepAngleDeg);
 
-        // Check if there is an existing drilled hole in holes[] matching this layer and angular position
+        // Invariant: Matching is strictly physical (rMatch && aMatch).
+        // Never allow layer index alone to match without radius, otherwise holes drilled on an outer ring
+        // would falsely appear as drilled on inner rings (such as rLast).
         const matchingHole = holes.find((h) => {
           const rMatch = Math.abs(h.r - ri) < 2.0;
           const aDiff = Math.abs(norm360(h.a) - a);
-          const aMatch = aDiff < 0.75 || Math.abs(aDiff - 360) < 0.75;
-          return (h.layer === i || rMatch) && aMatch;
+          const aMatch = Math.min(aDiff, 360 - aDiff) < 0.75;
+          return rMatch && aMatch;
         });
 
         const rad = (a * Math.PI) / 180;
@@ -525,7 +538,15 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       );
       if (!isAccounted) {
         const rad = (h.a * Math.PI) / 180;
-        const targetLayerIdx = Math.min(Math.max(0, h.layer), layersCount - 1);
+        let targetLayerIdx = 0;
+        let minDiff = Infinity;
+        ringRadii.forEach((rk, idx) => {
+          const diff = Math.abs(rk - h.r);
+          if (diff < minDiff) {
+            minDiff = diff;
+            targetLayerIdx = idx;
+          }
+        });
         const pt: Point = {
           x: h.r * Math.cos(rad),
           y: h.r * Math.sin(rad),
