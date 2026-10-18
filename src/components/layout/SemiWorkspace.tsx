@@ -39,14 +39,11 @@ interface SemiWorkspaceProps {
   camPlaybackStep: number | null;
   planSource: 'preview' | 'replay';
   previewScope: 'all' | 'currentLayer';
-  isMacroDrilling?: boolean;
   isMobileDrawerOpen: boolean;
   isClearConfirmOpen: boolean;
   paramsList: React.ReactNode;
   onSetPlanSource: (source: 'preview' | 'replay') => void;
   onSetPreviewScope: (scope: 'all' | 'currentLayer') => void;
-  onAutoDrillCurrentLayer?: () => void;
-  onCancelMacroDrill?: () => void;
   onToggleDrawer: () => void;
   onCloseDrawer: () => void;
   onUndoLastPlunge: () => void;
@@ -69,6 +66,8 @@ interface SemiWorkspaceProps {
   onStepNext: () => void;
   onTogglePlayCam: () => void;
   onSetCamPlaybackStep: (step: number | null) => void;
+  camSpeed: number;
+  onSetCamSpeed: (speed: number) => void;
 }
 
 export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
@@ -96,16 +95,15 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   executionPlan,
   isPlayingCam,
   camPlaybackStep,
+  camSpeed,
+  onSetCamSpeed,
   planSource,
   previewScope,
-  isMacroDrilling = false,
   isMobileDrawerOpen,
   isClearConfirmOpen,
   paramsList,
   onSetPlanSource,
   onSetPreviewScope,
-  onAutoDrillCurrentLayer,
-  onCancelMacroDrill,
   onToggleDrawer,
   onCloseDrawer,
   onUndoLastPlunge,
@@ -176,9 +174,11 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
           onTogglePlayCam={onTogglePlayCam}
           onSyncMachineToStep={(idx) => onSyncMachineToStep(idx)}
           onExitPreview={onExitCamPreview}
+          lang={lang}
           isAr={isAr}
           t={t}
-          lang={lang}
+          camSpeed={camSpeed}
+          onSetCamSpeed={onSetCamSpeed}
         />
 
         {buttonMap && (
@@ -222,9 +222,6 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             spindleOn={spindleOn}
             plungeDown={plungeDown}
             currentLayer={currentLayer}
-            isMacroDrilling={isMacroDrilling}
-            onAutoDrillCurrentLayer={onAutoDrillCurrentLayer}
-            onCancelMacroDrill={onCancelMacroDrill}
             onTableStep={onTableStep}
             onTableHome={onTableHome}
             onRadialStep={onRadialStep}
@@ -288,6 +285,8 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             isAr={isAr}
             t={t}
             lang={lang}
+            camSpeed={camSpeed}
+            onSetCamSpeed={onSetCamSpeed}
           />
 
           {buttonMap && (
@@ -329,9 +328,6 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             spindleOn={spindleOn}
             plungeDown={plungeDown}
             currentLayer={currentLayer}
-            isMacroDrilling={isMacroDrilling}
-            onAutoDrillCurrentLayer={onAutoDrillCurrentLayer}
-            onCancelMacroDrill={onCancelMacroDrill}
             onTableStep={onTableStep}
             onTableHome={onTableHome}
             onRadialStep={onRadialStep}

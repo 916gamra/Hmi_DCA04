@@ -64,7 +64,10 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     previewScope,
     isMacroDrilling,
     camPlaybackStep,
+    camSpeed,
+    buttonMap,
     setCamPlaybackStep,
+    setCamSpeed,
     setPlanSource,
     setPreviewScope,
     isPlayingCam,
@@ -161,6 +164,9 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       onTogglePlayCam={handleTogglePlayCam}
       onSyncMachineToStep={handleSyncMachineToStep}
       onExitPreview={handleExitCamPreview}
+      buttonMap={buttonMap}
+      onShowToast={onShowToast}
+      onSetCamSpeed={setCamSpeed}
     />
   );
 
@@ -190,11 +196,8 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       isPlayingCam={isPlayingCam}
       planSource={planSource}
       previewScope={previewScope}
-      isMacroDrilling={isMacroDrilling}
       onSetPlanSource={setPlanSource}
       onSetPreviewScope={setPreviewScope}
-      onAutoDrillCurrentLayer={handleAutoDrillCurrentLayer}
-      onCancelMacroDrill={handleCancelMacroDrill}
       isMobileDrawerOpen={isMobileDrawerOpen}
       isClearConfirmOpen={isClearConfirmOpen}
       paramsList={paramsList}
@@ -224,6 +227,10 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       onTogglePlayCam={handleTogglePlayCam}
       camPlaybackStep={camPlaybackStep}
       onSetCamPlaybackStep={setCamPlaybackStep}
+      camSpeed={camSpeed}
+      onSetCamSpeed={setCamSpeed}
+      buttonMap={buttonMap}
+      onShowToast={onShowToast}
     />
   );
 };

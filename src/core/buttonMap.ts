@@ -306,8 +306,8 @@ export function generateButtonMap(options: ButtonMapOptions): ButtonMapResult {
         const thetaPulses = Math.max(1, Math.round(dCW / Math.max(0.1, stepAngleDeg)));
         steps.push({
           stepIndex: stepIndex++,
-          action: 'THETA_MINUS',
-          buttonLabel: thetaPulses > 1 ? `(θ−)×${thetaPulses}` : '(θ−)',
+          action: 'THETA_PLUS',
+          buttonLabel: thetaPulses > 1 ? `(θ+)×${thetaPulses}` : '(θ+)',
           pulses: thetaPulses,
           rMm: currentR,
           thetaDeg: plunge.thetaDeg,
@@ -316,7 +316,7 @@ export function generateButtonMap(options: ButtonMapOptions): ButtonMapResult {
           explanationAr: `تدوير الطاولة باتجاه عقارب الساعة (CW) بمقدار ${dCW}° (${thetaPulses} نبضة) إلى θ=${plunge.thetaDeg}°`,
           explanationEn: `Rotate table Clockwise (CW) by ${dCW}° (${thetaPulses} pulses) to θ=${plunge.thetaDeg}°`,
         });
-        breakdown.thetaMinus += thetaPulses;
+        breakdown.thetaPlus += thetaPulses;
         currentTheta = plunge.thetaDeg;
       } else {
         // Table is already at the target plunge angle (e.g. after radial step or initial 0°)

@@ -68,7 +68,6 @@ export const SemiButtonMapCard: React.FC<SemiButtonMapCardProps> = ({
             <span>{step.buttonLabel}</span>
           </span>
         );
-      case 'THETA_MINUS':
       case 'THETA_PLUS':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-mono font-bold">
@@ -165,7 +164,7 @@ export const SemiButtonMapCard: React.FC<SemiButtonMapCardProps> = ({
           (r MAX): <strong>{buttonMap.breakdown.rMax}</strong>
         </span>
         <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-          (θ−): <strong>{buttonMap.breakdown.thetaMinus}</strong>
+          (θ+): <strong>{buttonMap.breakdown.thetaPlus}</strong>
         </span>
         {buttonMap.breakdown.rMinus > 0 && (
           <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">

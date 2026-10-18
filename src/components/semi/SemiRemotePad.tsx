@@ -28,8 +28,6 @@ interface SemiRemotePadProps {
   plungeDown: boolean;
   currentLayer: number;
   isMacroDrilling?: boolean;
-  onAutoDrillCurrentLayer?: () => void;
-  onCancelMacroDrill?: () => void;
   onTableStep: (dir: 1 | -1) => void;
   onTableHome: () => void;
   onRadialStep: (dir: 1 | -1) => void;
@@ -52,8 +50,6 @@ export const SemiRemotePad: React.FC<SemiRemotePadProps> = ({
   plungeDown,
   currentLayer,
   isMacroDrilling = false,
-  onAutoDrillCurrentLayer,
-  onCancelMacroDrill,
   onTableStep,
   onTableHome,
   onRadialStep,
@@ -270,41 +266,8 @@ export const SemiRemotePad: React.FC<SemiRemotePadProps> = ({
         </div>
       </div>
 
-      {/* 3. Macro Auto-Drill Current Layer & Manual Plunge Trigger */}
+      {/* 3. Manual Plunge Trigger */}
       <div className="flex flex-col gap-2 pt-0.5">
-        {onAutoDrillCurrentLayer && (
-          <div className="w-full">
-            {isMacroDrilling ? (
-              <button
-                type="button"
-                onClick={onCancelMacroDrill}
-                className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer animate-pulse active:scale-95"
-              >
-                <RotateCcw className="w-4 h-4 animate-spin" />
-                <span>{t.autoDrillLayerCancel}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onAutoDrillCurrentLayer}
-                disabled={!spindleOn}
-                className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm border flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
-                  spindleOn
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border-emerald-500/40 shadow-emerald-600/20'
-                    : 'bg-slate-100 text-slate-500 border-slate-200'
-                }`}
-                title={!spindleOn ? t.spindleOffWarning : t.autoDrillLayerBtn}
-              >
-                <Sparkles className="w-4 h-4 text-emerald-200" />
-                <span>{t.autoDrillLayerBtn}</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-white text-[10px] font-mono">
-                  L{currentLayer + 1}
-                </span>
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Primary Hero Action Trigger (Manual Plunge) */}
         <button
           type="button"

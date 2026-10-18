@@ -20,6 +20,8 @@ interface SemiSimulationControlsProps {
   isPlayingCam: boolean;
   planSource: 'preview' | 'replay';
   previewScope: 'all' | 'currentLayer';
+  camSpeed: number; // 0.5 | 1 | 2 | 4
+  onSetCamSpeed: (speed: number) => void;
   holesCount: number;
   currentLayer: number;
   onSetPlanSource: (source: 'preview' | 'replay') => void;
@@ -41,6 +43,8 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
   isPlayingCam,
   planSource,
   previewScope,
+  camSpeed,
+  onSetCamSpeed,
   holesCount,
   currentLayer,
   onSetPlanSource,
@@ -94,6 +98,24 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
               </>
             )}
           </button>
+
+          {/* Speed Selector */}
+          <div className="flex items-center gap-0.5 rounded-xl bg-slate-100 p-0.5 border border-slate-200 text-[10px] font-bold">
+            {[0.5, 1, 2, 4].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onSetCamSpeed(s)}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  camSpeed === s
+                    ? 'bg-white text-blue-700 shadow-2xs font-bold'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {s}×
+              </button>
+            ))}
+          </div>
 
           {/* Step Back button */}
           <button

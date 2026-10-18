@@ -82,6 +82,7 @@ export interface UseSemiAutoSessionReturn {
   buttonMap: ButtonMapResult;
   planSource: 'preview' | 'replay';
   previewScope: 'all' | 'currentLayer';
+  camSpeed: number;
   camPlaybackStep: number | null;
   isPlayingCam: boolean;
   isMobileDrawerOpen: boolean;
@@ -318,6 +319,7 @@ export function useSemiAutoSession(
   }, [planSource, holes.length, actualPlan, previewPlan]);
 
   const [camPlaybackStep, setCamPlaybackStep] = useState<number | null>(null);
+  const [camSpeed, setCamSpeed] = useState<number>(1);
   const [isPlayingCam, setIsPlayingCam] = useState<boolean>(false);
 
   // S2 & S4: Smooth animation & display state
@@ -408,12 +410,12 @@ export function useSemiAutoSession(
       // When both radial and angular change (layer transition):
       // 1. Table stops at last hole while radial carriage steps inward (Phase 1)
       // 2. Table rotates strictly Clockwise (CW) to next hole (Phase 2)
-      const rDuration = hasRadialMove ? 220 : 0;
-      const thetaDuration = hasAngularMove ? 260 : 0;
+      const rDuration = (hasRadialMove ? 220 : 0) / camSpeed;
+      const thetaDuration = (hasAngularMove ? 260 : 0) / camSpeed;
       const totalDuration =
         hasRadialMove && hasAngularMove
           ? rDuration + thetaDuration
-          : Math.max(rDuration, thetaDuration, 180);
+          : Math.max(rDuration, thetaDuration, 180 / camSpeed);
 
       setIsAnimating(true);
       setIsTableRotatingCW(hasAngularMove);
@@ -471,7 +473,7 @@ export function useSemiAutoSession(
           setIsTableRotatingCW(false);
           animFrameRef.current = null;
 
-          // Visual plunge flash for 150ms
+          // Visual plunge flash for 150ms / camSpeed
           setIsPlungeVisual(true);
           animTimeoutRef.current = window.setTimeout(() => {
             setIsPlungeVisual(false);
@@ -491,9 +493,9 @@ export function useSemiAutoSession(
                     return cur + 1;
                   });
                 }
-              }, 180);
+              }, 180 / camSpeed);
             }
-          }, 150);
+          }, 150 / camSpeed);
         }
       };
 
