@@ -269,3 +269,140 @@ export function buildExecutionPlan(
     yoYoReversalsEliminated: rawYoYoReversals,
   };
 }
+
+export interface PreviewPlanOptions {
+  ringRadii: number[];
+  nPoints: number;
+  stepAngleDeg: number;
+  stepRadialMm: number;
+  layerFilter?: number;
+  rToleranceMm?: number;
+  thetaToleranceDeg?: number;
+}
+
+/**
+ * Generates the theoretical planned grid holes for either all layers or a specific layer.
+ * Correctly assigns 120° drill heads (0, 1, 2) to each angular position so that
+ * buildExecutionPlan groups them into optimal 3-head simultaneous plunges.
+ */
+export function generatePreviewHoles(
+  ringRadii: number[],
+  nPoints: number,
+  stepAngleDeg: number,
+  layerFilter?: number
+): PlanHole[] {
+  if (!ringRadii || ringRadii.length === 0 || nPoints <= 0) {
+    return [];
+  }
+
+  const generatedHoles: PlanHole[] = [];
+
+  ringRadii.forEach((ri, layerIdx) => {
+    if (layerFilter !== undefined && layerFilter !== layerIdx) {
+      return;
+    }
+
+    // List all angular positions on this ring
+    interface CandidatePoint {
+      k: number;
+      a: number;
+    }
+
+    const unvisited: CandidatePoint[] = [];
+    for (let k = 0; k < nPoints; k++) {
+      unvisited.push({
+        k,
+        a: Number(norm360(k * stepAngleDeg).toFixed(2)),
+      });
+    }
+
+    // Group into 120° triads (heads 0, 1, 2)
+    while (unvisited.length > 0) {
+      const p0 = unvisited.shift()!;
+      const theta = Number(norm360(-p0.a).toFixed(2));
+
+      // Head 0 drills at p0.a
+      generatedHoles.push({
+        id: `preview-L${layerIdx + 1}-k${p0.k}-h0`,
+        globalIndex: layerIdx * nPoints + p0.k + 1,
+        layer: layerIdx,
+        r: ri,
+        a: p0.a,
+        head: 0,
+        drilledAt: 0,
+      });
+
+      // Theoretical tray angles that heads 1 and 2 would hit at table angle theta:
+      // Invariant: a = norm360(head * 120 - theta)
+      const a1Expected = Number(norm360(120 - theta).toFixed(2));
+      const a2Expected = Number(norm360(240 - theta).toFixed(2));
+
+      // Check if unvisited contains a point matching a1Expected
+      const idx1 = unvisited.findIndex((p) => {
+        const diff = Math.abs(norm360(p.a) - norm360(a1Expected));
+        return Math.min(diff, 360 - diff) <= 0.75;
+      });
+
+      if (idx1 !== -1) {
+        const p1 = unvisited.splice(idx1, 1)[0];
+        generatedHoles.push({
+          id: `preview-L${layerIdx + 1}-k${p1.k}-h1`,
+          globalIndex: layerIdx * nPoints + p1.k + 1,
+          layer: layerIdx,
+          r: ri,
+          a: p1.a,
+          head: 1,
+          drilledAt: 0,
+        });
+      }
+
+      // Check if unvisited contains a point matching a2Expected
+      const idx2 = unvisited.findIndex((p) => {
+        const diff = Math.abs(norm360(p.a) - norm360(a2Expected));
+        return Math.min(diff, 360 - diff) <= 0.75;
+      });
+
+      if (idx2 !== -1) {
+        const p2 = unvisited.splice(idx2, 1)[0];
+        generatedHoles.push({
+          id: `preview-L${layerIdx + 1}-k${p2.k}-h2`,
+          globalIndex: layerIdx * nPoints + p2.k + 1,
+          layer: layerIdx,
+          r: ri,
+          a: p2.a,
+          head: 2,
+          drilledAt: 0,
+        });
+      }
+    }
+  });
+
+  return generatedHoles;
+}
+
+/**
+ * Builds an optimal execution plan directly from the planned geometric grid.
+ * Operates even when no actual holes have been drilled yet (holes = []).
+ */
+export function buildPreviewPlan(options: PreviewPlanOptions): ExecutionPlan {
+  const {
+    ringRadii,
+    nPoints,
+    stepAngleDeg,
+    stepRadialMm,
+    layerFilter,
+    rToleranceMm = 1.5,
+    thetaToleranceDeg = 0.75,
+  } = options;
+
+  const previewHoles = generatePreviewHoles(ringRadii, nPoints, stepAngleDeg, layerFilter);
+
+  return buildExecutionPlan(previewHoles, {
+    stepRadialMm,
+    stepAngleDeg,
+    ringRadii,
+    rToleranceMm,
+    thetaToleranceDeg,
+  });
+}
+

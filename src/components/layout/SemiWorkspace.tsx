@@ -33,9 +33,16 @@ interface SemiWorkspaceProps {
   activePlaybackStep: any | null;
   isPlayingCam: boolean;
   camPlaybackStep: number | null;
+  planSource: 'preview' | 'replay';
+  previewScope: 'all' | 'currentLayer';
+  isMacroDrilling?: boolean;
   isMobileDrawerOpen: boolean;
   isClearConfirmOpen: boolean;
   paramsList: React.ReactNode;
+  onSetPlanSource: (source: 'preview' | 'replay') => void;
+  onSetPreviewScope: (scope: 'all' | 'currentLayer') => void;
+  onAutoDrillCurrentLayer?: () => void;
+  onCancelMacroDrill?: () => void;
   onToggleDrawer: () => void;
   onCloseDrawer: () => void;
   onUndoLastPlunge: () => void;
@@ -83,9 +90,16 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   executionPlan,
   isPlayingCam,
   camPlaybackStep,
+  planSource,
+  previewScope,
+  isMacroDrilling = false,
   isMobileDrawerOpen,
   isClearConfirmOpen,
   paramsList,
+  onSetPlanSource,
+  onSetPreviewScope,
+  onAutoDrillCurrentLayer,
+  onCancelMacroDrill,
   onToggleDrawer,
   onCloseDrawer,
   onUndoLastPlunge,
@@ -144,6 +158,12 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
           executionPlan={executionPlan}
           camPlaybackStep={camPlaybackStep}
           isPlayingCam={isPlayingCam}
+          planSource={planSource}
+          previewScope={previewScope}
+          holesCount={holesCount}
+          currentLayer={currentLayer}
+          onSetPlanSource={onSetPlanSource}
+          onSetPreviewScope={onSetPreviewScope}
           onSetCamPlaybackStep={onSetCamPlaybackStep}
           onStepPrev={onStepPrev}
           onStepNext={onStepNext}
@@ -182,6 +202,10 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             tableZUp={tableZUp}
             spindleOn={spindleOn}
             plungeDown={plungeDown}
+            currentLayer={currentLayer}
+            isMacroDrilling={isMacroDrilling}
+            onAutoDrillCurrentLayer={onAutoDrillCurrentLayer}
+            onCancelMacroDrill={onCancelMacroDrill}
             onTableStep={onTableStep}
             onTableHome={onTableHome}
             onRadialStep={onRadialStep}
@@ -230,6 +254,12 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             executionPlan={executionPlan}
             camPlaybackStep={camPlaybackStep}
             isPlayingCam={isPlayingCam}
+            planSource={planSource}
+            previewScope={previewScope}
+            holesCount={holesCount}
+            currentLayer={currentLayer}
+            onSetPlanSource={onSetPlanSource}
+            onSetPreviewScope={onSetPreviewScope}
             onSetCamPlaybackStep={onSetCamPlaybackStep}
             onStepPrev={onStepPrev}
             onStepNext={onStepNext}
@@ -266,6 +296,10 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             tableZUp={tableZUp}
             spindleOn={spindleOn}
             plungeDown={plungeDown}
+            currentLayer={currentLayer}
+            isMacroDrilling={isMacroDrilling}
+            onAutoDrillCurrentLayer={onAutoDrillCurrentLayer}
+            onCancelMacroDrill={onCancelMacroDrill}
             onTableStep={onTableStep}
             onTableHome={onTableHome}
             onRadialStep={onRadialStep}

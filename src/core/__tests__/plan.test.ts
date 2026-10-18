@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   deriveTableAngle,
   buildExecutionPlan,
+  buildPreviewPlan,
   PlanHole,
 } from '../plan';
 
@@ -164,4 +165,58 @@ describe('Execution Plan Engine (CAM Outer -> Inner)', () => {
     expect(holeToStep.get('h3')).toBe(3);
     expect(holeToStep.get('h4')).toBe(4);
   });
+
+  it('builds preview plan directly from planned grid even when holes array is empty', () => {
+    // 4 layers, 12 points per layer (stepAngle = 30°)
+    const ringRadii = [200, 160, 120, 80];
+    const nPoints = 12;
+    const stepAngleDeg = 30;
+    const stepRadialMm = 40;
+
+    const previewPlan = buildPreviewPlan({
+      ringRadii,
+      nPoints,
+      stepAngleDeg,
+      stepRadialMm,
+    });
+
+    // Total holes = 4 * 12 = 48
+    expect(previewPlan.totalHoles).toBe(48);
+    // With 3 heads at 120°, 12 points per layer are drilled in 12 / 3 = 4 plunges
+    // Total plunges = 4 layers * 4 plunges = 16
+    expect(previewPlan.totalPlunges).toBe(16);
+    expect(previewPlan.bands).toHaveLength(4);
+    expect(previewPlan.steps).toHaveLength(16);
+
+    // Strict Outer -> Inner
+    expect(previewPlan.bands[0].nominalR).toBe(200);
+    expect(previewPlan.bands[3].nominalR).toBe(80);
+
+    // Every step must be a full triad of 3 holes with heads [0, 1, 2]
+    for (const step of previewPlan.steps) {
+      expect(step.holesCount).toBe(3);
+      expect(step.isFullTriad).toBe(true);
+      expect(step.heads).toEqual([0, 1, 2]);
+    }
+  });
+
+  it('supports single-layer preview plan filtering (layerFilter)', () => {
+    const ringRadii = [200, 150, 100];
+    const nPoints = 12;
+
+    const layer1Plan = buildPreviewPlan({
+      ringRadii,
+      nPoints,
+      stepAngleDeg: 30,
+      stepRadialMm: 50,
+      layerFilter: 1, // Second layer: 150mm
+    });
+
+    expect(layer1Plan.totalHoles).toBe(12);
+    expect(layer1Plan.totalPlunges).toBe(4);
+    expect(layer1Plan.bands).toHaveLength(1);
+    expect(layer1Plan.bands[0].nominalR).toBe(150);
+    expect(layer1Plan.bands[0].matchingLayerName).toBe('L2');
+  });
 });
+

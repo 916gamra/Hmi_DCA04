@@ -60,8 +60,13 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     holes,
     numberingMode,
     executionPlan,
+    planSource,
+    previewScope,
+    isMacroDrilling,
     camPlaybackStep,
     setCamPlaybackStep,
+    setPlanSource,
+    setPreviewScope,
     isPlayingCam,
     isMobileDrawerOpen,
     isClearConfirmOpen,
@@ -101,6 +106,8 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     handleTogglePlayCam,
     handleExitCamPreview,
     handleToggleSection,
+    handleAutoDrillCurrentLayer,
+    handleCancelMacroDrill,
   } = session;
 
   const paramsList = (
@@ -181,6 +188,13 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       executionPlan={executionPlan}
       activePlaybackStep={activePlaybackStep}
       isPlayingCam={isPlayingCam}
+      planSource={planSource}
+      previewScope={previewScope}
+      isMacroDrilling={isMacroDrilling}
+      onSetPlanSource={setPlanSource}
+      onSetPreviewScope={setPreviewScope}
+      onAutoDrillCurrentLayer={handleAutoDrillCurrentLayer}
+      onCancelMacroDrill={handleCancelMacroDrill}
       isMobileDrawerOpen={isMobileDrawerOpen}
       isClearConfirmOpen={isClearConfirmOpen}
       paramsList={paramsList}

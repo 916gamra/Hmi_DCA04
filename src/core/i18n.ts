@@ -434,6 +434,15 @@ export interface Translations {
   derivedSpacingBadge: string;
   radialPressesHelper: string;
   stepVsSpacingNote: string;
+  planSourcePreview: string;
+  planSourceReplay: string;
+  previewScopeAll: string;
+  previewScopeCurrent: string;
+  autoDrillLayerBtn: string;
+  autoDrillLayerRunning: string;
+  autoDrillLayerDone: string;
+  autoDrillLayerAlreadyDrilled: string;
+  autoDrillLayerCancel: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -856,6 +865,15 @@ export const translations: Record<Language, Translations> = {
     derivedSpacingBadge: 'تباعد هندسي مشتق (s)',
     radialPressesHelper: 'بين حلقتين متتاليتين: s = {s} مم → حوالي {n} ضغطة r± (بخطوة {step} مم)',
     stepVsSpacingNote: 'المسافة بين الحلقات s مشتقة هندسياً، بينما خطوة الزر r± حرة ومستقلة لتمنحك تحكماً ميدانياً مرناً.',
+    planSourcePreview: 'معاينة الشبكة',
+    planSourceReplay: 'إعادة عرض المحفور',
+    previewScopeAll: 'كل الطبقات',
+    previewScopeCurrent: 'الحلقة الحالية',
+    autoDrillLayerBtn: 'حفر الحلقة الحالية تلقائياً',
+    autoDrillLayerRunning: 'جاري حفر الحلقة...',
+    autoDrillLayerDone: 'تم حفر الحلقة بنجاح ({count} ثقب)',
+    autoDrillLayerAlreadyDrilled: 'جميع نقاط هذه الحلقة محفورة بالفعل',
+    autoDrillLayerCancel: 'إلغاء الحفر التلقائي',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -1276,5 +1294,14 @@ export const translations: Record<Language, Translations> = {
     derivedSpacingBadge: 'Espacement s calculé',
     radialPressesHelper: 'Entre deux couches : s = {s} mm → env. {n} impulsions r± (pas de {step} mm)',
     stepVsSpacingNote: 'L’espacement s est calculé géométriquement, tandis que le pas r± reste indépendant pour un pilotage précis.',
+    planSourcePreview: 'Aperçu grille',
+    planSourceReplay: 'Rejeu perçage',
+    previewScopeAll: 'Tous cercles',
+    previewScopeCurrent: 'Cercle actif',
+    autoDrillLayerBtn: 'Percer le cercle actif auto',
+    autoDrillLayerRunning: 'Perçage du cercle...',
+    autoDrillLayerDone: 'Cercle percé avec succès ({count} trous)',
+    autoDrillLayerAlreadyDrilled: 'Tous les points de ce cercle sont déjà percés',
+    autoDrillLayerCancel: 'Annuler perçage auto',
   },
 };

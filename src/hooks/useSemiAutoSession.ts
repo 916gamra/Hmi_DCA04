@@ -3,7 +3,7 @@ import { Translations, Language } from '../core/i18n';
 import { norm360 } from '../core/model';
 import { safeStorage } from '../core/safeStorage';
 import { HEADS } from '../core/constants';
-import { buildExecutionPlan, ExecutionPlan } from '../core/plan';
+import { buildExecutionPlan, buildPreviewPlan, ExecutionPlan, PlanStep } from '../core/plan';
 import { ViewOptions, TrayParams } from '../types';
 import { SemiSectionId } from '../components/semi/SemiParamsList';
 
@@ -38,6 +38,8 @@ export interface SemiAutoSavedState {
   currentLayer?: number;
   holes?: SemiHole[];
   numberingMode?: 'cam' | 'layer' | 'global';
+  planSource?: 'preview' | 'replay';
+  previewScope?: 'all' | 'currentLayer';
 }
 
 function safeId(): string {
@@ -74,6 +76,10 @@ export interface UseSemiAutoSessionReturn {
   holes: SemiHole[];
   numberingMode: 'cam' | 'layer' | 'global';
   executionPlan: ExecutionPlan;
+  actualPlan: ExecutionPlan;
+  previewPlan: ExecutionPlan;
+  planSource: 'preview' | 'replay';
+  previewScope: 'all' | 'currentLayer';
   camPlaybackStep: number | null;
   isPlayingCam: boolean;
   isMobileDrawerOpen: boolean;
@@ -81,7 +87,14 @@ export interface UseSemiAutoSessionReturn {
   openSection: SemiSectionId | null;
   viewOptions: ViewOptions;
   toolRadius: number;
-  activePlaybackStep: any | null;
+  activePlaybackStep: PlanStep | null;
+  displayTheta: number;
+  displayR: number;
+  isAnimating: boolean;
+  isPlungeVisual: boolean;
+  isMacroDrilling: boolean;
+  setPlanSource: (src: 'preview' | 'replay') => void;
+  setPreviewScope: (scope: 'all' | 'currentLayer') => void;
   setTrayDMm: (v: number) => void;
   setMarginMm: (v: number) => void;
   setLayersCount: (v: number) => void;
@@ -116,6 +129,8 @@ export interface UseSemiAutoSessionReturn {
   handleTogglePlayCam: () => void;
   handleExitCamPreview: () => void;
   handleToggleSection: (id: SemiSectionId) => void;
+  handleAutoDrillCurrentLayer: () => Promise<void>;
+  handleCancelMacroDrill: () => void;
 }
 
 export function useSemiAutoSession(
@@ -237,11 +252,11 @@ export function useSemiAutoSession(
     return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v < 7 ? Math.round(v) : 0;
   });
 
-  const [holes, setHoles] = useState<any[]>(() => {
+  const [holes, setHoles] = useState<SemiHole[]>(() => {
     const arr = savedState.holes;
     if (Array.isArray(arr)) {
       return arr.filter(
-        (h): h is any =>
+        (h): h is SemiHole =>
           Boolean(h) &&
           typeof h.r === 'number' &&
           Number.isFinite(h.r) &&
@@ -259,7 +274,20 @@ export function useSemiAutoSession(
     return 'cam';
   });
 
-  const executionPlan = useMemo<ExecutionPlan>(() => {
+  // S1: Plan source & preview scope state
+  const [planSource, setPlanSource] = useState<'preview' | 'replay'>(() => {
+    if (savedState.planSource === 'replay' || savedState.planSource === 'preview') {
+      return savedState.planSource;
+    }
+    return savedState.holes && savedState.holes.length > 0 ? 'replay' : 'preview';
+  });
+
+  const [previewScope, setPreviewScope] = useState<'all' | 'currentLayer'>(() => {
+    return savedState.previewScope === 'currentLayer' ? 'currentLayer' : 'all';
+  });
+
+  // Replay plan: built from actual drilled holes
+  const actualPlan = useMemo<ExecutionPlan>(() => {
     return buildExecutionPlan(holes, {
       stepRadialMm,
       stepAngleDeg,
@@ -267,30 +295,174 @@ export function useSemiAutoSession(
     });
   }, [holes, stepRadialMm, stepAngleDeg, ringRadii]);
 
+  // Preview plan: built from theoretical geometric grid (even if holes = [])
+  const previewPlan = useMemo<ExecutionPlan>(() => {
+    return buildPreviewPlan({
+      ringRadii,
+      nPoints,
+      stepAngleDeg,
+      stepRadialMm,
+      layerFilter: previewScope === 'currentLayer' ? currentLayer : undefined,
+    });
+  }, [ringRadii, nPoints, stepAngleDeg, stepRadialMm, previewScope, currentLayer]);
+
+  // Active execution plan: replay if holes exist and replay selected, otherwise preview
+  const executionPlan = useMemo<ExecutionPlan>(() => {
+    if (planSource === 'replay' && holes.length > 0) {
+      return actualPlan;
+    }
+    return previewPlan;
+  }, [planSource, holes.length, actualPlan, previewPlan]);
+
   const [camPlaybackStep, setCamPlaybackStep] = useState<number | null>(null);
   const [isPlayingCam, setIsPlayingCam] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (!isPlayingCam || executionPlan.steps.length === 0) return;
-    const timer = window.setInterval(() => {
-      setCamPlaybackStep((prev) => {
-        const cur = prev ?? 0;
-        if (cur >= executionPlan.steps.length) {
-          setIsPlayingCam(false);
-          return 1;
-        }
-        return cur + 1;
-      });
-    }, 1100);
-    return () => clearInterval(timer);
-  }, [isPlayingCam, executionPlan.steps.length]);
+  // S2: Smooth animation & display state
+  const [displayTheta, setDisplayTheta] = useState<number>(thetaDeg);
+  const [displayR, setDisplayR] = useState<number>(rMm);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [isPlungeVisual, setIsPlungeVisual] = useState<boolean>(false);
 
+  // S3: Macro auto-drill state
+  const [isMacroDrilling, setIsMacroDrilling] = useState<boolean>(false);
+  const macroCancelRef = useRef<boolean>(false);
+
+  const displayThetaRef = useRef<number>(thetaDeg);
+  const displayRRef = useRef<number>(rMm);
+  const isPlayingCamRef = useRef<boolean>(isPlayingCam);
+  isPlayingCamRef.current = isPlayingCam;
+
+  const executionPlanRef = useRef<ExecutionPlan>(executionPlan);
+  executionPlanRef.current = executionPlan;
+
+  const animFrameRef = useRef<number | null>(null);
+  const animTimeoutRef = useRef<number | null>(null);
+
+  // Clamp camPlaybackStep if totalPlunges changes
   useEffect(() => {
-    if (holes.length === 0 && camPlaybackStep !== null) {
-      setCamPlaybackStep(null);
-      setIsPlayingCam(false);
+    if (camPlaybackStep !== null && executionPlan.totalPlunges > 0 && camPlaybackStep > executionPlan.totalPlunges) {
+      setCamPlaybackStep(executionPlan.totalPlunges);
     }
-  }, [holes.length, camPlaybackStep]);
+  }, [executionPlan.totalPlunges, camPlaybackStep]);
+
+  // Keep display synchronized with manual machine adjustments when not in preview/replay
+  useEffect(() => {
+    if (camPlaybackStep === null) {
+      setDisplayTheta(thetaDeg);
+      displayThetaRef.current = thetaDeg;
+      setDisplayR(rMm);
+      displayRRef.current = rMm;
+    }
+  }, [camPlaybackStep, thetaDeg, rMm]);
+
+  const activePlaybackStep = useMemo<PlanStep | null>(() => {
+    if (camPlaybackStep !== null && executionPlan.steps[camPlaybackStep - 1]) {
+      return executionPlan.steps[camPlaybackStep - 1];
+    }
+    return null;
+  }, [camPlaybackStep, executionPlan.steps]);
+
+  // S2: Smooth mechanical interpolation animation between steps
+  useEffect(() => {
+    if (activePlaybackStep) {
+      const targetR = activePlaybackStep.rMm;
+      const targetTheta = activePlaybackStep.thetaDeg;
+
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      if (animTimeoutRef.current !== null) {
+        clearTimeout(animTimeoutRef.current);
+        animTimeoutRef.current = null;
+      }
+
+      const startR = displayRRef.current;
+      const startTheta = displayThetaRef.current;
+      const startTime = performance.now();
+      const duration = 320; // 320ms smooth motion
+
+      const diff = norm360(targetTheta) - norm360(startTheta);
+      const deltaTheta = diff > 180 ? diff - 360 : diff < -180 ? diff + 360 : diff;
+
+      setIsAnimating(true);
+      setIsPlungeVisual(false);
+
+      const stepFrame = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        // ease-out cubic
+        const ease = 1 - Math.pow(1 - progress, 3);
+
+        const curR = Number((startR + (targetR - startR) * ease).toFixed(2));
+        const curTheta = Number(norm360(startTheta + deltaTheta * ease).toFixed(2));
+
+        setDisplayR(curR);
+        displayRRef.current = curR;
+        setDisplayTheta(curTheta);
+        displayThetaRef.current = curTheta;
+
+        if (progress < 1) {
+          animFrameRef.current = requestAnimationFrame(stepFrame);
+        } else {
+          setDisplayR(targetR);
+          displayRRef.current = targetR;
+          setDisplayTheta(targetTheta);
+          displayThetaRef.current = targetTheta;
+          setIsAnimating(false);
+          animFrameRef.current = null;
+
+          // Visual plunge flash for 140ms
+          setIsPlungeVisual(true);
+          animTimeoutRef.current = window.setTimeout(() => {
+            setIsPlungeVisual(false);
+            animTimeoutRef.current = null;
+
+            if (isPlayingCamRef.current) {
+              animTimeoutRef.current = window.setTimeout(() => {
+                animTimeoutRef.current = null;
+                if (isPlayingCamRef.current) {
+                  setCamPlaybackStep((prev) => {
+                    const cur = prev ?? 1;
+                    const total = executionPlanRef.current.steps.length;
+                    if (cur >= total) {
+                      setIsPlayingCam(false);
+                      return cur;
+                    }
+                    return cur + 1;
+                  });
+                }
+              }, 160);
+            }
+          }, 140);
+        }
+      };
+
+      animFrameRef.current = requestAnimationFrame(stepFrame);
+    } else {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      if (animTimeoutRef.current !== null) {
+        clearTimeout(animTimeoutRef.current);
+        animTimeoutRef.current = null;
+      }
+      setIsAnimating(false);
+      setIsPlungeVisual(false);
+    }
+
+    return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      if (animTimeoutRef.current !== null) {
+        clearTimeout(animTimeoutRef.current);
+        animTimeoutRef.current = null;
+      }
+    };
+  }, [activePlaybackStep]);
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState<boolean>(false);
@@ -354,6 +526,8 @@ export function useSemiAutoSession(
       currentLayer,
       holes,
       numberingMode,
+      planSource,
+      previewScope,
     };
     safeStorage.setJSON(STORAGE_KEY_SEMI, payload);
   }, [
@@ -374,6 +548,8 @@ export function useSemiAutoSession(
     currentLayer,
     holes,
     numberingMode,
+    planSource,
+    previewScope,
   ]);
 
   useEffect(() => {
@@ -454,6 +630,10 @@ export function useSemiAutoSession(
       if (st) {
         setRMm(st.rMm);
         setThetaDeg(st.thetaDeg);
+        setDisplayR(st.rMm);
+        displayRRef.current = st.rMm;
+        setDisplayTheta(st.thetaDeg);
+        displayThetaRef.current = st.thetaDeg;
         if (onShowToast) {
           onShowToast(
             isAr
@@ -621,16 +801,146 @@ export function useSemiAutoSession(
   const handleExitCamPreview = useCallback(() => {
     setCamPlaybackStep(null);
     setIsPlayingCam(false);
-  }, []);
+    setIsPlungeVisual(false);
+    setDisplayR(rMm);
+    displayRRef.current = rMm;
+    setDisplayTheta(thetaDeg);
+    displayThetaRef.current = thetaDeg;
+  }, [rMm, thetaDeg]);
 
   const handleToggleSection = useCallback((id: SemiSectionId) => {
     setOpenSection((prev) => (prev === id ? null : id));
   }, []);
 
-  const activePlaybackStep =
-    camPlaybackStep !== null && executionPlan.steps[camPlaybackStep - 1]
-      ? executionPlan.steps[camPlaybackStep - 1]
-      : null;
+  // S3: Macro auto-drill current layer
+  const handleCancelMacroDrill = useCallback(() => {
+    macroCancelRef.current = true;
+    setIsMacroDrilling(false);
+    setPlungeDown(false);
+    if (onShowToast) {
+      onShowToast(t.autoDrillLayerCancel);
+    }
+  }, [onShowToast, t.autoDrillLayerCancel]);
+
+  const handleAutoDrillCurrentLayer = useCallback(async () => {
+    if (isMacroDrilling) return;
+
+    if (!spindleOn) {
+      if (onShowToast) {
+        onShowToast(t.spindleOffWarning);
+      }
+      return;
+    }
+
+    const layerRadius = ringRadii[currentLayer];
+    if (typeof layerRadius !== 'number' || layerRadius < rHeadMinMm) {
+      if (onShowToast) {
+        onShowToast(t.rHeadMinLimitReached);
+      }
+      return;
+    }
+
+    const layerPlan = buildPreviewPlan({
+      ringRadii,
+      nPoints,
+      stepAngleDeg,
+      stepRadialMm,
+      layerFilter: currentLayer,
+    });
+
+    if (layerPlan.steps.length === 0) return;
+
+    macroCancelRef.current = false;
+    setIsMacroDrilling(true);
+
+    if (onShowToast) {
+      onShowToast(t.autoDrillLayerRunning);
+    }
+
+    let totalDrilledInMacro = 0;
+
+    for (let sIdx = 0; sIdx < layerPlan.steps.length; sIdx++) {
+      if (macroCancelRef.current) break;
+
+      const step = layerPlan.steps[sIdx];
+
+      // 1. Position table and heads to step target
+      setRMm(step.rMm);
+      setThetaDeg(step.thetaDeg);
+      setDisplayR(step.rMm);
+      displayRRef.current = step.rMm;
+      setDisplayTheta(step.thetaDeg);
+      displayThetaRef.current = step.thetaDeg;
+
+      // Mechanical indexing stabilization delay
+      await new Promise((resolve) => setTimeout(resolve, 140));
+      if (macroCancelRef.current) break;
+
+      // 2. Plunge down
+      setPlungeDown(true);
+
+      // 3. Record holes for this step
+      const targetLayer = currentLayer;
+      const stepNewHoles: SemiHole[] = step.holes.map((sh, hIdx) => ({
+        id: safeId(),
+        globalIndex: targetLayer * nPoints + (sh.globalIndex ? (sh.globalIndex - 1) % nPoints : hIdx) + 1,
+        layer: targetLayer,
+        r: step.rMm,
+        a: sh.a,
+        head: sh.head,
+        drilledAt: Date.now(),
+      }));
+
+      setHoles((prev) => {
+        const filtered = stepNewHoles.filter(
+          (nh) =>
+            !prev.some((ph) => {
+              const rSame = Math.abs(ph.r - nh.r) < 1.0;
+              const aDiff = Math.abs(norm360(ph.a) - norm360(nh.a));
+              const aSame = Math.min(aDiff, 360 - aDiff) < 0.5;
+              return rSame && aSame;
+            })
+        );
+        totalDrilledInMacro += filtered.length;
+        return [...prev, ...filtered].slice(0, MAX_HOLES);
+      });
+
+      // 4. Dwell duration
+      const dwellMs = dwellSec > 0 ? dwellSec * 1000 : 200;
+      await new Promise((resolve) => setTimeout(resolve, dwellMs));
+      if (macroCancelRef.current) break;
+
+      // 5. Plunge up
+      setPlungeDown(false);
+
+      // Inter-step delay
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+
+    setPlungeDown(false);
+    setIsMacroDrilling(false);
+
+    if (!macroCancelRef.current && onShowToast) {
+      onShowToast(
+        t.autoDrillLayerDone.replace('{count}', String(totalDrilledInMacro || layerPlan.totalHoles))
+      );
+    }
+  }, [
+    isMacroDrilling,
+    spindleOn,
+    ringRadii,
+    currentLayer,
+    rHeadMinMm,
+    nPoints,
+    stepAngleDeg,
+    stepRadialMm,
+    dwellSec,
+    onShowToast,
+    t.spindleOffWarning,
+    t.rHeadMinLimitReached,
+    t.autoDrillLayerRunning,
+    t.autoDrillLayerDone,
+  ]);
 
   return {
     isAr,
@@ -659,6 +969,10 @@ export function useSemiAutoSession(
     holes,
     numberingMode,
     executionPlan,
+    actualPlan,
+    previewPlan,
+    planSource,
+    previewScope,
     camPlaybackStep,
     setCamPlaybackStep,
     isPlayingCam,
@@ -668,6 +982,13 @@ export function useSemiAutoSession(
     viewOptions,
     toolRadius,
     activePlaybackStep,
+    displayTheta,
+    displayR,
+    isAnimating,
+    isPlungeVisual,
+    isMacroDrilling,
+    setPlanSource,
+    setPreviewScope,
     setTrayDMm,
     setMarginMm,
     setLayersCount,
@@ -701,5 +1022,7 @@ export function useSemiAutoSession(
     handleTogglePlayCam,
     handleExitCamPreview,
     handleToggleSection,
+    handleAutoDrillCurrentLayer,
+    handleCancelMacroDrill,
   };
 }
