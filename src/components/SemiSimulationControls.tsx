@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, RotateCcw, LocateFixed, Activity } from 'lucide-react';
+import { Play, Pause, ChevronLeft, ChevronRight, RotateCcw, LocateFixed, Activity } from 'lucide-react';
 import { ExecutionPlan } from '../core/plan';
 import { Translations, Language } from '../core/i18n';
 
@@ -58,38 +58,38 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
             {isPlayingCam ? (
               <>
                 <Pause className="w-4 h-4 fill-white" />
-                <span>{t.camPauseBtn || 'Pause'}</span>
+                <span>{t.btnPause || t.camPauseBtn}</span>
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 fill-white" />
-                <span>{t.camPlayBtn || 'Play CAM'}</span>
+                <span>{t.btnPlay || t.camPlayBtn}</span>
               </>
             )}
           </button>
 
-          {/* Step Back button */}
+          {/* Step Back button (Chevron pointing Left in LTR - matching Auto SimulationControls) */}
           <button
             type="button"
             onClick={onStepPrev}
             disabled={currentStep <= 1 || executionPlan.steps.length === 0}
             className="flex items-center gap-1 px-2.5 py-2 rounded-2xl text-xs font-semibold text-[#475569] bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1]/60 transition-all cursor-pointer select-none active:scale-95 disabled:opacity-40"
-            title={t.camPrevStepBtn}
+            title={t.btnPrevStep || t.camPrevStepBtn}
           >
-            <SkipBack className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline">− 1</span>
           </button>
 
-          {/* Step Forward button */}
+          {/* Step Forward button (Chevron pointing Right in LTR - matching Auto SimulationControls) */}
           <button
             type="button"
             onClick={onStepNext}
             disabled={currentStep >= totalPlunges || executionPlan.steps.length === 0}
             className="flex items-center gap-1 px-2.5 py-2 rounded-2xl text-xs font-semibold text-[#475569] bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1]/60 transition-all cursor-pointer select-none active:scale-95 disabled:opacity-40"
-            title={t.camNextStepBtn}
+            title={t.btnNextStep || t.camNextStepBtn}
           >
             <span className="hidden sm:inline">+ 1</span>
-            <SkipForward className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4" />
           </button>
 
           {/* Reset / Exit Preview button */}
