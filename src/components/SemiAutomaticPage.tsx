@@ -61,6 +61,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     numberingMode,
     executionPlan,
     camPlaybackStep,
+    setCamPlaybackStep,
     isPlayingCam,
     isMobileDrawerOpen,
     isClearConfirmOpen,
@@ -147,7 +148,7 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       executionPlan={executionPlan}
       camPlaybackStep={camPlaybackStep}
       isPlayingCam={isPlayingCam}
-      onSetCamPlaybackStep={(step) => {}}
+      onSetCamPlaybackStep={setCamPlaybackStep}
       onStepPrev={handleStepPrev}
       onStepNext={handleStepNext}
       onTogglePlayCam={handleTogglePlayCam}
@@ -207,6 +208,8 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       onStepPrev={handleStepPrev}
       onStepNext={handleStepNext}
       onTogglePlayCam={handleTogglePlayCam}
+      camPlaybackStep={camPlaybackStep}
+      onSetCamPlaybackStep={setCamPlaybackStep}
     />
   );
 };

@@ -107,6 +107,7 @@ export interface UseSemiAutoSessionReturn {
   handlePlungeDown: () => void;
   handlePlungeUp: () => void;
   handlePlungeCancel: () => void;
+  setCamPlaybackStep: (step: number | null) => void;
   handleUndoLastPlunge: () => void;
   handleClearAllHoles: () => void;
   handleChangeRHeadMin: (val: number) => void;
@@ -659,6 +660,7 @@ export function useSemiAutoSession(
     numberingMode,
     executionPlan,
     camPlaybackStep,
+    setCamPlaybackStep,
     isPlayingCam,
     isMobileDrawerOpen,
     isClearConfirmOpen,

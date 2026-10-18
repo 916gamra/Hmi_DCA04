@@ -242,7 +242,7 @@ export default function App() {
       />
 
       {/* 2. Main Content Canvas & Panels */}
-      <main className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 md:px-6 pt-2 pb-24 md:pb-28">
+      <main className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 md:px-6 pt-2 pb-2">
         <div className="max-w-7xl mx-auto h-full flex flex-col">
           {mainTab === 'auto' && (
             <AutoWorkspace

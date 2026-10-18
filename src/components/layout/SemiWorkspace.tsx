@@ -1,9 +1,9 @@
 import React from 'react';
 import { CanvasStage } from '../CanvasStage';
-import { SemiCamActiveBanner } from '../semi/SemiCamActiveBanner';
 import { SemiStatusBar } from '../semi/SemiStatusBar';
 import { SemiRemotePad } from '../semi/SemiRemotePad';
 import { SemiMobileDrawer } from '../semi/SemiMobileDrawer';
+import { SemiSimulationControls } from '../SemiSimulationControls';
 import { TrayModel, SimulationState, ViewOptions } from '../../types';
 import { Translations, Language } from '../../core/i18n';
 import { SlidersHorizontal } from 'lucide-react';
@@ -32,6 +32,7 @@ interface SemiWorkspaceProps {
   executionPlan: any;
   activePlaybackStep: any | null;
   isPlayingCam: boolean;
+  camPlaybackStep: number | null;
   isMobileDrawerOpen: boolean;
   isClearConfirmOpen: boolean;
   paramsList: React.ReactNode;
@@ -56,6 +57,7 @@ interface SemiWorkspaceProps {
   onStepPrev: () => void;
   onStepNext: () => void;
   onTogglePlayCam: () => void;
+  onSetCamPlaybackStep: (step: number | null) => void;
 }
 
 export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
@@ -79,8 +81,8 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   tableZUp,
   plungeDown,
   executionPlan,
-  activePlaybackStep,
   isPlayingCam,
+  camPlaybackStep,
   isMobileDrawerOpen,
   isClearConfirmOpen,
   paramsList,
@@ -105,6 +107,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   onStepPrev,
   onStepNext,
   onTogglePlayCam,
+  onSetCamPlaybackStep,
 }) => {
   return (
     <div
@@ -123,19 +126,6 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
 
       {/* 1. Mobile Single Column View (< lg) */}
       <div className="flex flex-col lg:hidden gap-3.5 h-full min-h-0 select-none">
-        <SemiCamActiveBanner
-          activePlaybackStep={activePlaybackStep}
-          totalPlunges={executionPlan.totalPlunges}
-          isPlayingCam={isPlayingCam}
-          isAr={isAr}
-          t={t}
-          onSyncMachine={onSyncMachineToStep}
-          onClose={onExitCamPreview}
-          onPrevStep={onStepPrev}
-          onNextStep={onStepNext}
-          onTogglePlay={onTogglePlayCam}
-        />
-
         <div className="flex-none w-full">
           <CanvasStage
             model={model}
@@ -148,6 +138,22 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             isDrawerOpen={isMobileDrawerOpen}
           />
         </div>
+
+        {/* Semi Simulation Controls directly under CanvasStage */}
+        <SemiSimulationControls
+          executionPlan={executionPlan}
+          camPlaybackStep={camPlaybackStep}
+          isPlayingCam={isPlayingCam}
+          onSetCamPlaybackStep={onSetCamPlaybackStep}
+          onStepPrev={onStepPrev}
+          onStepNext={onStepNext}
+          onTogglePlayCam={onTogglePlayCam}
+          onSyncMachineToStep={(idx) => onSyncMachineToStep(idx)}
+          onExitPreview={onExitCamPreview}
+          isAr={isAr}
+          t={t}
+          lang={lang}
+        />
 
         <SemiStatusBar
           thetaDeg={thetaDeg}
@@ -166,7 +172,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
           hasExecutionSteps={executionPlan.steps.length > 0}
         />
 
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y flex flex-col gap-3 pr-0.5 pb-20 oneui-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y flex flex-col gap-3 pr-0.5 pb-3 oneui-scrollbar">
           <SemiRemotePad
             t={t}
             isAr={isAr}
@@ -211,18 +217,6 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
         </aside>
 
         <main className="w-full min-w-0 flex flex-col gap-4">
-          <SemiCamActiveBanner
-            activePlaybackStep={activePlaybackStep}
-            totalPlunges={executionPlan.totalPlunges}
-            isPlayingCam={isPlayingCam}
-            isAr={isAr}
-            t={t}
-            onSyncMachine={onSyncMachineToStep}
-            onClose={onExitCamPreview}
-            onPrevStep={onStepPrev}
-            onNextStep={onStepNext}
-            onTogglePlay={onTogglePlayCam}
-          />
           <CanvasStage
             model={model}
             state={state}
@@ -231,6 +225,22 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             t={t}
             lang={lang}
           />
+
+          <SemiSimulationControls
+            executionPlan={executionPlan}
+            camPlaybackStep={camPlaybackStep}
+            isPlayingCam={isPlayingCam}
+            onSetCamPlaybackStep={onSetCamPlaybackStep}
+            onStepPrev={onStepPrev}
+            onStepNext={onStepNext}
+            onTogglePlayCam={onTogglePlayCam}
+            onSyncMachineToStep={(idx) => onSyncMachineToStep(idx)}
+            onExitPreview={onExitCamPreview}
+            isAr={isAr}
+            t={t}
+            lang={lang}
+          />
+
           <SemiStatusBar
             thetaDeg={thetaDeg}
             rMm={rMm}
