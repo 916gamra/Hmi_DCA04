@@ -5,18 +5,9 @@ import { safeStorage } from '../core/safeStorage';
 import { HEADS } from '../core/constants';
 import { buildExecutionPlan, buildPreviewPlan, ExecutionPlan, PlanStep } from '../core/plan';
 import { generateButtonMap, generateButtonMapFromExecutionPlan, ButtonMapResult } from '../core/buttonMap';
-import { ViewOptions, TrayParams } from '../types';
-import { SemiSectionId } from '../components/semi/SemiParamsList';
+import { ViewOptions, TrayParams, SemiHole } from '../types';
+export type { SemiHole };
 
-export interface SemiHole {
-  id: string;
-  globalIndex?: number;
-  layer: number;
-  r: number;
-  a: number;
-  head: 0 | 1 | 2;
-  drilledAt: number;
-}
 
 export const STORAGE_KEY_SEMI = 'hmi-tray-semiauto-state-v4';
 const MAX_HOLES = 1500;

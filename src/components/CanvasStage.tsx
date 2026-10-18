@@ -125,6 +125,23 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
     };
   }, [redraw]);
 
+  // Non-passive wheel event listener for canvas zoom
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onWheelNative = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = Math.exp(-e.deltaY * 0.0015);
+      setZoom((prev) => clamp(prev * factor, 0.4, 60));
+    };
+
+    canvas.addEventListener('wheel', onWheelNative, { passive: false });
+    return () => {
+      canvas.removeEventListener('wheel', onWheelNative);
+    };
+  }, []);
+
   // Zoom controls
   const handleZoom = (factor: number) => {
     setZoom((prev) => clamp(prev * factor, 0.4, 60));
@@ -277,12 +294,6 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
     }
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const factor = Math.exp(-e.deltaY * 0.0015);
-    setZoom((prev) => clamp(prev * factor, 0.4, 60));
-  };
-
   return (
     <div className="oneui-card p-2.5 sm:p-3.5 md:p-5 flex flex-col gap-2 sm:gap-3">
       {/* 1. Stage Top Header: Zoom & Theme on the left, Adjust & Title on the right */}
@@ -408,7 +419,6 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          onWheel={handleWheel}
           className={`w-full h-full block ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           role="img"
           aria-label="محاكاة صينية الشاي الصناعية"

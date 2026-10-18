@@ -56,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight text-[#0f172a] truncate">
                 {t.appTitle}
               </h1>
-              <span className="hidden xs:inline-block text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] shrink-0">
+              <span className="hidden sm:inline-block text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] shrink-0">
                 {t.badgeOneUi}
               </span>
             </div>

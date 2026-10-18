@@ -154,3 +154,13 @@ export interface RecipePreset {
   tagFr?: string;
   params: Partial<TrayParams>;
 }
+
+export interface SemiHole {
+  id: string;
+  globalIndex?: number;
+  layer: number;
+  r: number;
+  a: number;
+  head: 0 | 1 | 2;
+  drilledAt: number;
+}

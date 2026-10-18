@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Translations } from '../../core/i18n';
+import { SemiHole } from '../../types';
 
 interface SemiRemotePadProps {
   t: Translations;

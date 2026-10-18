@@ -133,6 +133,32 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   onLockDesign,
   onUnlockDesign,
 }) => {
+  const remotePadNode = (
+    <SemiRemotePad
+      t={t}
+      isAr={isAr}
+      dwellSec={dwellSec}
+      stepAngleDeg={stepAngleDeg}
+      stepRadialMm={stepRadialMm}
+      tableZUp={tableZUp}
+      spindleOn={spindleOn}
+      plungeDown={plungeDown}
+      currentLayer={currentLayer}
+      onTableStep={onTableStep}
+      onTableHome={onTableHome}
+      onRadialStep={onRadialStep}
+      onRadialMax={onRadialMax}
+      onSetTableZUp={onSetTableZUp}
+      onSetSpindleOn={onSetSpindleOn}
+      onPlungeDown={onPlungeDown}
+      onPlungeUp={onPlungeUp}
+      onPlungeCancel={onPlungeCancel}
+      lockedDesign={lockedDesign}
+      onLockDesign={onLockDesign}
+      onUnlockDesign={onUnlockDesign}
+    />
+  );
+
   return (
     <div
       className="flex flex-col gap-3 max-w-5xl mx-auto w-full h-full min-h-0 select-none overflow-hidden"
@@ -218,29 +244,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
         />
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y flex flex-col gap-3 pr-0.5 pb-3 oneui-scrollbar">
-          <SemiRemotePad
-            t={t}
-            isAr={isAr}
-            dwellSec={dwellSec}
-            stepAngleDeg={stepAngleDeg}
-            stepRadialMm={stepRadialMm}
-            tableZUp={tableZUp}
-            spindleOn={spindleOn}
-            plungeDown={plungeDown}
-            currentLayer={currentLayer}
-            onTableStep={onTableStep}
-            onTableHome={onTableHome}
-            onRadialStep={onRadialStep}
-            onRadialMax={onRadialMax}
-            onSetTableZUp={onSetTableZUp}
-            onSetSpindleOn={onSetSpindleOn}
-            onPlungeDown={onPlungeDown}
-            onPlungeUp={onPlungeUp}
-            onPlungeCancel={onPlungeCancel}
-            lockedDesign={lockedDesign}
-            onLockDesign={onLockDesign}
-            onUnlockDesign={onUnlockDesign}
-          />
+          {remotePadNode}
         </div>
 
         <SemiMobileDrawer
@@ -327,26 +331,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             executionPlanTotalPlunges={executionPlan.totalPlunges}
             hasExecutionSteps={executionPlan.steps.length > 0}
           />
-          <SemiRemotePad
-            t={t}
-            isAr={isAr}
-            dwellSec={dwellSec}
-            stepAngleDeg={stepAngleDeg}
-            stepRadialMm={stepRadialMm}
-            tableZUp={tableZUp}
-            spindleOn={spindleOn}
-            plungeDown={plungeDown}
-            currentLayer={currentLayer}
-            onTableStep={onTableStep}
-            onTableHome={onTableHome}
-            onRadialStep={onRadialStep}
-            onRadialMax={onRadialMax}
-            onSetTableZUp={onSetTableZUp}
-            onSetSpindleOn={onSetSpindleOn}
-            onPlungeDown={onPlungeDown}
-            onPlungeUp={onPlungeUp}
-            onPlungeCancel={onPlungeCancel}
-          />
+          {remotePadNode}
         </main>
       </div>
     </div>

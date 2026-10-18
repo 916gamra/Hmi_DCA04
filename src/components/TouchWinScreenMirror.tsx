@@ -108,8 +108,8 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
       subtitle: 'المعاملات اليدوية للزاوية والتمدد',
       lines: [
         ' manual parameters  ',
-        'rotation angle     93.1°',
-        'expansion length : 0    MM',
+        `rotation angle     ${params.add.toFixed(1).padStart(4, ' ')}°`,
+        `expansion length : ${String(params.spacing).padEnd(4, ' ')} MM`,
         `deflower time      ${(params.timing.dwell / 1000).toFixed(2)} S`,
       ],
     },
@@ -119,8 +119,8 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
       subtitle: 'ترددات السرعة في النمط اليدوي',
       lines: [
         ' manual parameters  ',
-        'rotation speed  : 1000 Hz',
-        'expansion speed :  800 Hz',
+        `rotation speed  : ${String(params.rotationSpeedHz).padEnd(4, ' ')} Hz`,
+        `expansion speed : ${String(params.expansionSpeedHz).padEnd(4, ' ')} Hz`,
         '                    ',
       ],
     },

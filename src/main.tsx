@@ -55,3 +55,8 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>
 );
+
+// Register PWA Service Worker for offline capability
+import { registerSW } from 'virtual:pwa-register';
+registerSW({ immediate: true });
+
