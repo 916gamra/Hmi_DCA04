@@ -162,8 +162,9 @@ describe('Execution Plan Engine (CAM Outer -> Inner)', () => {
 
     expect(holeToStep.get('h1')).toBe(1);
     expect(holeToStep.get('h2')).toBe(2);
-    expect(holeToStep.get('h3')).toBe(3);
-    expect(holeToStep.get('h4')).toBe(4);
+    // Continuous CW: h2 was at theta=330°, so inner ring step 3 starts at theta=330° (h4)
+    expect(holeToStep.get('h4')).toBe(3);
+    expect(holeToStep.get('h3')).toBe(4);
   });
 
   it('builds preview plan directly from planned grid even when holes array is empty', () => {

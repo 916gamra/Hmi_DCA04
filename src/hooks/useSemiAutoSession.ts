@@ -4,6 +4,7 @@ import { norm360 } from '../core/model';
 import { safeStorage } from '../core/safeStorage';
 import { HEADS } from '../core/constants';
 import { buildExecutionPlan, buildPreviewPlan, ExecutionPlan, PlanStep } from '../core/plan';
+import { generateButtonMap, ButtonMapResult } from '../core/buttonMap';
 import { ViewOptions, TrayParams } from '../types';
 import { SemiSectionId } from '../components/semi/SemiParamsList';
 
@@ -78,6 +79,7 @@ export interface UseSemiAutoSessionReturn {
   executionPlan: ExecutionPlan;
   actualPlan: ExecutionPlan;
   previewPlan: ExecutionPlan;
+  buttonMap: ButtonMapResult;
   planSource: 'preview' | 'replay';
   previewScope: 'all' | 'currentLayer';
   camPlaybackStep: number | null;
@@ -91,6 +93,7 @@ export interface UseSemiAutoSessionReturn {
   displayTheta: number;
   displayR: number;
   isAnimating: boolean;
+  isTableRotatingCW: boolean;
   isPlungeVisual: boolean;
   isMacroDrilling: boolean;
   setPlanSource: (src: 'preview' | 'replay') => void;
@@ -317,11 +320,24 @@ export function useSemiAutoSession(
   const [camPlaybackStep, setCamPlaybackStep] = useState<number | null>(null);
   const [isPlayingCam, setIsPlayingCam] = useState<boolean>(false);
 
-  // S2: Smooth animation & display state
+  // S2 & S4: Smooth animation & display state
   const [displayTheta, setDisplayTheta] = useState<number>(thetaDeg);
   const [displayR, setDisplayR] = useState<number>(rMm);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [isTableRotatingCW, setIsTableRotatingCW] = useState<boolean>(false);
   const [isPlungeVisual, setIsPlungeVisual] = useState<boolean>(false);
+
+  // S4: Deterministic Button Map generated from design geometry
+  const buttonMap = useMemo<ButtonMapResult>(() => {
+    return generateButtonMap({
+      ringRadii,
+      nPoints,
+      stepAngleDeg,
+      stepRadialMm,
+      rHeadMinMm,
+      layerFilter: previewScope === 'currentLayer' ? currentLayer : undefined,
+    });
+  }, [ringRadii, nPoints, stepAngleDeg, stepRadialMm, rHeadMinMm, previewScope, currentLayer]);
 
   // S3: Macro auto-drill state
   const [isMacroDrilling, setIsMacroDrilling] = useState<boolean>(false);
@@ -352,6 +368,7 @@ export function useSemiAutoSession(
       displayThetaRef.current = thetaDeg;
       setDisplayR(rMm);
       displayRRef.current = rMm;
+      setIsTableRotatingCW(false);
     }
   }, [camPlaybackStep, thetaDeg, rMm]);
 
@@ -362,7 +379,7 @@ export function useSemiAutoSession(
     return null;
   }, [camPlaybackStep, executionPlan.steps]);
 
-  // S2: Smooth mechanical interpolation animation between steps
+  // S4: Strict Unidirectional Clockwise (CW) mechanical interpolation animation
   useEffect(() => {
     if (activePlaybackStep) {
       const targetR = activePlaybackStep.rMm;
@@ -380,29 +397,70 @@ export function useSemiAutoSession(
       const startR = displayRRef.current;
       const startTheta = displayThetaRef.current;
       const startTime = performance.now();
-      const duration = 320; // 320ms smooth motion
 
-      const diff = norm360(targetTheta) - norm360(startTheta);
-      const deltaTheta = diff > 180 ? diff - 360 : diff < -180 ? diff + 360 : diff;
+      // Clockwise (CW) angular distance in machine table coordinates
+      const dCW = (norm360(startTheta) - norm360(targetTheta) + 360) % 360;
+      const hasAngularMove = dCW > 0.05 && dCW < 359.95;
+      const deltaR = targetR - startR;
+      const hasRadialMove = Math.abs(deltaR) > 0.05;
+
+      // 2-Phase mechanical timing:
+      // When both radial and angular change (layer transition):
+      // 1. Table stops at last hole while radial carriage steps inward (Phase 1)
+      // 2. Table rotates strictly Clockwise (CW) to next hole (Phase 2)
+      const rDuration = hasRadialMove ? 220 : 0;
+      const thetaDuration = hasAngularMove ? 260 : 0;
+      const totalDuration =
+        hasRadialMove && hasAngularMove
+          ? rDuration + thetaDuration
+          : Math.max(rDuration, thetaDuration, 180);
 
       setIsAnimating(true);
+      setIsTableRotatingCW(hasAngularMove);
       setIsPlungeVisual(false);
 
       const stepFrame = (now: number) => {
         const elapsed = now - startTime;
-        const progress = Math.min(1, elapsed / duration);
-        // ease-out cubic
-        const ease = 1 - Math.pow(1 - progress, 3);
 
-        const curR = Number((startR + (targetR - startR) * ease).toFixed(2));
-        const curTheta = Number(norm360(startTheta + deltaTheta * ease).toFixed(2));
+        let curR = startR;
+        let curTheta = startTheta;
+
+        if (hasRadialMove && hasAngularMove) {
+          if (elapsed <= rDuration) {
+            // Phase 1: Radial inward movement. Table remains stationary at last hole!
+            const rProgress = Math.min(1, elapsed / rDuration);
+            const rEase = 1 - Math.pow(1 - rProgress, 3);
+            curR = Number((startR + deltaR * rEase).toFixed(2));
+            curTheta = startTheta;
+          } else {
+            // Phase 2: Rotary table indexes Clockwise (CW) to target angle!
+            curR = targetR;
+            const thetaElapsed = elapsed - rDuration;
+            const thetaProgress = Math.min(1, thetaElapsed / thetaDuration);
+            const thetaEase = 1 - Math.pow(1 - thetaProgress, 3);
+            curTheta = Number(norm360(startTheta - dCW * thetaEase).toFixed(2));
+          }
+        } else if (hasRadialMove) {
+          const rProgress = Math.min(1, elapsed / totalDuration);
+          const rEase = 1 - Math.pow(1 - rProgress, 3);
+          curR = Number((startR + deltaR * rEase).toFixed(2));
+          curTheta = startTheta;
+        } else if (hasAngularMove) {
+          const thetaProgress = Math.min(1, elapsed / totalDuration);
+          const thetaEase = 1 - Math.pow(1 - thetaProgress, 3);
+          curR = startR;
+          curTheta = Number(norm360(startTheta - dCW * thetaEase).toFixed(2));
+        } else {
+          curR = targetR;
+          curTheta = targetTheta;
+        }
 
         setDisplayR(curR);
         displayRRef.current = curR;
         setDisplayTheta(curTheta);
         displayThetaRef.current = curTheta;
 
-        if (progress < 1) {
+        if (elapsed < totalDuration) {
           animFrameRef.current = requestAnimationFrame(stepFrame);
         } else {
           setDisplayR(targetR);
@@ -410,9 +468,10 @@ export function useSemiAutoSession(
           setDisplayTheta(targetTheta);
           displayThetaRef.current = targetTheta;
           setIsAnimating(false);
+          setIsTableRotatingCW(false);
           animFrameRef.current = null;
 
-          // Visual plunge flash for 140ms
+          // Visual plunge flash for 150ms
           setIsPlungeVisual(true);
           animTimeoutRef.current = window.setTimeout(() => {
             setIsPlungeVisual(false);
@@ -432,9 +491,9 @@ export function useSemiAutoSession(
                     return cur + 1;
                   });
                 }
-              }, 160);
+              }, 180);
             }
-          }, 140);
+          }, 150);
         }
       };
 
@@ -449,6 +508,7 @@ export function useSemiAutoSession(
         animTimeoutRef.current = null;
       }
       setIsAnimating(false);
+      setIsTableRotatingCW(false);
       setIsPlungeVisual(false);
     }
 
@@ -971,6 +1031,7 @@ export function useSemiAutoSession(
     executionPlan,
     actualPlan,
     previewPlan,
+    buttonMap,
     planSource,
     previewScope,
     camPlaybackStep,
@@ -985,6 +1046,7 @@ export function useSemiAutoSession(
     displayTheta,
     displayR,
     isAnimating,
+    isTableRotatingCW,
     isPlungeVisual,
     isMacroDrilling,
     setPlanSource,

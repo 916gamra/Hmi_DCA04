@@ -197,8 +197,13 @@ export function buildExecutionPlan(
       }
     }
 
-    // Sort plunges within band by angle θ ascending (0° -> 360°)
-    plungeClusters.sort((a, b) => a.thetaDeg - b.thetaDeg);
+    // Sort plunges within band in continuous Clockwise (CW) sequence from previous step position
+    const baseTheta = previousStep ? previousStep.thetaDeg : 0;
+    plungeClusters.sort((a, b) => {
+      const distA = (norm360(baseTheta) - norm360(a.thetaDeg) + 360) % 360;
+      const distB = (norm360(baseTheta) - norm360(b.thetaDeg) + 360) % 360;
+      return distA - distB;
+    });
 
     const bandSteps: PlanStep[] = [];
 
@@ -213,7 +218,8 @@ export function buildExecutionPlan(
 
       if (previousStep) {
         deltaR = Number((nominalR - previousStep.rMm).toFixed(2));
-        deltaTheta = Number(norm360(pc.thetaDeg - previousStep.thetaDeg).toFixed(2));
+        // Clockwise angular advance
+        deltaTheta = Number(((norm360(previousStep.thetaDeg) - norm360(pc.thetaDeg) + 360) % 360).toFixed(2));
 
         if (Math.abs(deltaR) > 0.05) {
           rPulses = Math.max(1, Math.round(Math.abs(deltaR) / Math.max(0.1, stepRadialMm)));

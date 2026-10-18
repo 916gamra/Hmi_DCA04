@@ -129,6 +129,7 @@ export interface SimulationState {
   cur: TimelineAction | null;
   u: number;
   done: boolean;
+  isRotatingCW?: boolean;
 }
 
 export type CanvasTheme = 'light' | 'dark';

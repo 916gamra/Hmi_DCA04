@@ -454,6 +454,36 @@ export function renderCanvas(
     }
   }
 
+  // 5.5 Active Clockwise (CW) Table Rotation Motion Indicator
+  if (state && state.isRotatingCW) {
+    ctx.save();
+    const arrowR = Rp + 14;
+    const startAng = (theta - 30) * DEG;
+    const endAng = (theta + 30) * DEG;
+    ctx.beginPath();
+    ctx.arc(cx, cy, arrowR, startAng, endAng, false);
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 2.8;
+    ctx.stroke();
+
+    // Arrowhead in CW direction at endAng
+    const tipX = cx + Math.cos(endAng) * arrowR;
+    const tipY = cy + Math.sin(endAng) * arrowR;
+    drawArrowhead(ctx, tipX, tipY, endAng + Math.PI / 2, 7, '#06b6d4');
+
+    // Subtle CW Badge
+    drawDimensionBadge(
+      ctx,
+      '↻ CW',
+      cx,
+      cy - Rp - 16,
+      '#06b6d4',
+      palette.dimPillBg,
+      '#06b6d4'
+    );
+    ctx.restore();
+  }
+
   // 6. Concentric Layer Rings
   if (options.rings) {
     model.layers.forEach((L) => {

@@ -4,6 +4,8 @@ import { SemiStatusBar } from '../semi/SemiStatusBar';
 import { SemiRemotePad } from '../semi/SemiRemotePad';
 import { SemiMobileDrawer } from '../semi/SemiMobileDrawer';
 import { SemiSimulationControls } from '../SemiSimulationControls';
+import { SemiButtonMapCard } from '../semi/SemiButtonMapCard';
+import { ButtonMapResult } from '../../core/buttonMap';
 import { TrayModel, SimulationState, ViewOptions } from '../../types';
 import { Translations, Language } from '../../core/i18n';
 import { SlidersHorizontal } from 'lucide-react';
@@ -17,6 +19,8 @@ interface SemiWorkspaceProps {
   t: Translations;
   lang: Language;
   isAr: boolean;
+  buttonMap?: ButtonMapResult;
+  onShowToast?: (msg: string) => void;
   thetaDeg: number;
   rMm: number;
   rHeadMinMm: number;
@@ -75,6 +79,8 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   t,
   lang,
   isAr,
+  buttonMap,
+  onShowToast,
   thetaDeg,
   rMm,
   rHeadMinMm,
@@ -175,6 +181,19 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
           lang={lang}
         />
 
+        {buttonMap && (
+          <SemiButtonMapCard
+            buttonMap={buttonMap}
+            camPlaybackStep={camPlaybackStep}
+            onSyncMachineToStep={(r, th) => {
+              if (onSyncMachineToStep) onSyncMachineToStep();
+            }}
+            onShowToast={onShowToast}
+            isAr={isAr}
+            t={t}
+          />
+        )}
+
         <SemiStatusBar
           thetaDeg={thetaDeg}
           rMm={rMm}
@@ -270,6 +289,19 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             t={t}
             lang={lang}
           />
+
+          {buttonMap && (
+            <SemiButtonMapCard
+              buttonMap={buttonMap}
+              camPlaybackStep={camPlaybackStep}
+              onSyncMachineToStep={(r, th) => {
+                if (onSyncMachineToStep) onSyncMachineToStep();
+              }}
+              onShowToast={onShowToast}
+              isAr={isAr}
+              t={t}
+            />
+          )}
 
           <SemiStatusBar
             thetaDeg={thetaDeg}

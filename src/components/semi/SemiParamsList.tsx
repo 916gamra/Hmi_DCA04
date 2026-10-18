@@ -7,12 +7,16 @@ import { SemiTimingCard } from './SemiTimingCard';
 import { SemiModesCard } from './SemiModesCard';
 import { SemiSafetyCard } from './SemiSafetyCard';
 import { SemiPlanCard } from './SemiPlanCard';
+import { SemiButtonMapCard } from './SemiButtonMapCard';
+import { ButtonMapResult } from '../../core/buttonMap';
 
-export type SemiSectionId = 'geo' | 'pts' | 'timing' | 'modes' | 'safety' | 'plan';
+export type SemiSectionId = 'geo' | 'pts' | 'timing' | 'modes' | 'safety' | 'plan' | 'bmap';
 
 interface SemiParamsListProps {
   openSection: SemiSectionId | null;
   onToggleSection: (id: SemiSectionId) => void;
+  buttonMap?: ButtonMapResult;
+  onShowToast?: (msg: string) => void;
   t: Translations;
   lang: Language;
   isAr: boolean;
@@ -77,6 +81,8 @@ interface SemiParamsListProps {
 export const SemiParamsList: React.FC<SemiParamsListProps> = ({
   openSection,
   onToggleSection,
+  buttonMap,
+  onShowToast,
   t,
   isAr,
 
@@ -231,6 +237,18 @@ export const SemiParamsList: React.FC<SemiParamsListProps> = ({
         onSyncMachineToStep={onSyncMachineToStep}
         onExitPreview={onExitPreview}
       />
+
+      {/* 7. Carte des boutons (Button Map) */}
+      {buttonMap && (
+        <SemiButtonMapCard
+          buttonMap={buttonMap}
+          camPlaybackStep={camPlaybackStep}
+          onSyncMachineToStep={onSyncMachineToStep}
+          onShowToast={onShowToast}
+          isAr={isAr}
+          t={t}
+        />
+      )}
     </div>
   );
 };

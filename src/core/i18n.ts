@@ -443,6 +443,18 @@ export interface Translations {
   autoDrillLayerDone: string;
   autoDrillLayerAlreadyDrilled: string;
   autoDrillLayerCancel: string;
+  buttonMapTitle: string;
+  buttonMapSubtitle: string;
+  buttonMapCondensedLabel: string;
+  buttonMapCopyBtn: string;
+  buttonMapCopiedToast: string;
+  buttonMapTotalPresses: string;
+  buttonMapPressesBreakdown: string;
+  buttonMapStepColAction: string;
+  buttonMapStepColTarget: string;
+  buttonMapStepColDesc: string;
+  buttonMapShowCard: string;
+  buttonMapHideCard: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -874,6 +886,18 @@ export const translations: Record<Language, Translations> = {
     autoDrillLayerDone: 'تم حفر الحلقة بنجاح ({count} ثقب)',
     autoDrillLayerAlreadyDrilled: 'جميع نقاط هذه الحلقة محفورة بالفعل',
     autoDrillLayerCancel: 'إلغاء الحفر التلقائي',
+    buttonMapTitle: 'خريطة الأزرار الميكانيكية (Button Map)',
+    buttonMapSubtitle: 'تسلسل الأزرار المختزل للتنفيذ اليدوي (CW أحادي الاتجاه)',
+    buttonMapCondensedLabel: 'خريطة الأزرار المختزلة للمشغّل:',
+    buttonMapCopyBtn: 'نسخ خريطة الأزرار',
+    buttonMapCopiedToast: 'تم نسخ خريطة الأزرار إلى الحافظة بنجاح',
+    buttonMapTotalPresses: 'إجمالي الضغطات',
+    buttonMapPressesBreakdown: 'تفصيل ضغطات الأزرار',
+    buttonMapStepColAction: 'الزر / الأمر',
+    buttonMapStepColTarget: 'الإحداثيات',
+    buttonMapStepColDesc: 'الشرح الميكانيكي',
+    buttonMapShowCard: 'عرض خريطة الأزرار',
+    buttonMapHideCard: 'إخفاء خريطة الأزرار',
   },
   fr: {
     appTitle: 'TRIVIUM120° (HMI Tray Designer)',
@@ -1303,5 +1327,17 @@ export const translations: Record<Language, Translations> = {
     autoDrillLayerDone: 'Cercle percé avec succès ({count} trous)',
     autoDrillLayerAlreadyDrilled: 'Tous les points de ce cercle sont déjà percés',
     autoDrillLayerCancel: 'Annuler perçage auto',
+    buttonMapTitle: 'Carte Tactile des Boutons (Button Map)',
+    buttonMapSubtitle: 'Séquence tactile unidirectionnelle CW pour opérateur manuel',
+    buttonMapCondensedLabel: 'Séquence condensée pour l’opérateur :',
+    buttonMapCopyBtn: 'Copier la séquence',
+    buttonMapCopiedToast: 'Séquence des boutons copiée dans le presse-papier',
+    buttonMapTotalPresses: 'Total des pressions',
+    buttonMapPressesBreakdown: 'Répartition des pressions',
+    buttonMapStepColAction: 'Touche / Action',
+    buttonMapStepColTarget: 'Coordonnées',
+    buttonMapStepColDesc: 'Explication mécanique',
+    buttonMapShowCard: 'Voir la carte des boutons',
+    buttonMapHideCard: 'Masquer la carte des boutons',
   },
 };

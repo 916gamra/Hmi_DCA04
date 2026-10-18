@@ -31,6 +31,7 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
     activePlaybackStep,
     displayTheta,
     displayR,
+    isTableRotatingCW,
     isPlungeVisual,
   } = session;
 
@@ -139,6 +140,10 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
             pointLabel = String(k + 1);
           }
 
+          // In preview simulation, points drilled up to current camPlaybackStep appear drilled
+          const isSimulatedDrilled =
+            camPlaybackStep !== null && stepInfo !== undefined && stepInfo.stepIndex <= camPlaybackStep;
+
           const pt: Point = {
             x: ri * Math.cos(rad),
             y: ri * Math.sin(rad),
@@ -148,7 +153,7 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
             head: previewHead,
             j: 0,
             bad: false,
-            fired: false,
+            fired: isSimulatedDrilled,
             label: pointLabel,
             camStatus,
             isCamActive,
@@ -288,11 +293,13 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
       },
       done: false,
       u: isPlungingOrStepActive ? 1 : 0.8,
+      isRotatingCW: isTableRotatingCW,
     };
   }, [
     camPlaybackStep,
     displayTheta,
     displayR,
+    isTableRotatingCW,
     isPlungeVisual,
     thetaDeg,
     rMm,
