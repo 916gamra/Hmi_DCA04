@@ -68,6 +68,9 @@ interface SemiWorkspaceProps {
   onSetCamPlaybackStep: (step: number | null) => void;
   camSpeed: number;
   onSetCamSpeed: (speed: number) => void;
+  lockedDesign: SemiHole[] | null;
+  onLockDesign: () => void;
+  onUnlockDesign: () => void;
 }
 
 export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
@@ -126,6 +129,9 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   onStepNext,
   onTogglePlayCam,
   onSetCamPlaybackStep,
+  lockedDesign,
+  onLockDesign,
+  onUnlockDesign,
 }) => {
   return (
     <div
@@ -231,6 +237,9 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             onPlungeDown={onPlungeDown}
             onPlungeUp={onPlungeUp}
             onPlungeCancel={onPlungeCancel}
+            lockedDesign={lockedDesign}
+            onLockDesign={onLockDesign}
+            onUnlockDesign={onUnlockDesign}
           />
         </div>
 

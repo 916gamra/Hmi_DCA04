@@ -179,16 +179,33 @@ export const SemiButtonMapCard: React.FC<SemiButtonMapCardProps> = ({
         </span>
       </div>
 
-      {/* 3. Condensed Button Sequence Banner */}
+      {/* 3. Condensed Button Sequence Banner (Excel Formula Light UI Style) */}
       <div className="flex flex-col gap-1.5">
-        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-          {t.buttonMapCondensedLabel}
+        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center justify-between">
+          <span>{t.buttonMapCondensedLabel}</span>
+          <span className="text-[9px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Formula Bar</span>
         </div>
         <div
-          className="bg-slate-900 text-emerald-400 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl font-mono text-[11px] sm:text-xs leading-relaxed overflow-x-auto max-h-28 oneui-scrollbar select-text border border-slate-800 shadow-inner"
+          className="bg-slate-50/90 border border-slate-200 rounded-2xl p-3 flex flex-wrap items-center gap-1.5 shadow-inner font-mono text-xs max-h-36 overflow-y-auto oneui-scrollbar select-text"
           dir="ltr"
         >
-          {buttonMap.condensedString}
+          {buttonMap.steps.map((st, idx) => {
+            let badgeStyle = 'bg-slate-100 text-slate-800 border-slate-200';
+            if (st.action === 'HOME') badgeStyle = 'bg-purple-50 text-purple-700 border-purple-200';
+            else if (st.action === 'R_MAX') badgeStyle = 'bg-teal-50 text-teal-700 border-teal-200';
+            else if (st.action === 'THETA_PLUS' || st.action === 'THETA_MINUS') badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+            else if (st.action === 'R_MINUS' || st.action === 'R_PLUS') badgeStyle = 'bg-amber-50 text-amber-800 border-amber-200';
+            else if (st.action === 'PUSH') badgeStyle = 'bg-rose-50 text-rose-700 border-rose-300 font-extrabold shadow-2xs';
+
+            return (
+              <React.Fragment key={st.stepIndex}>
+                {idx > 0 && <span className="text-slate-400 font-bold select-none text-[11px]">&gt;</span>}
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] sm:text-xs font-bold transition-all ${badgeStyle}`}>
+                  {st.buttonLabel}
+                </span>
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 

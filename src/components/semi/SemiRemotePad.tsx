@@ -37,6 +37,9 @@ interface SemiRemotePadProps {
   onPlungeDown: () => void;
   onPlungeUp: () => void;
   onPlungeCancel: () => void;
+  lockedDesign: SemiHole[] | null;
+  onLockDesign: () => void;
+  onUnlockDesign: () => void;
 }
 
 export const SemiRemotePad: React.FC<SemiRemotePadProps> = ({
@@ -59,6 +62,9 @@ export const SemiRemotePad: React.FC<SemiRemotePadProps> = ({
   onPlungeDown,
   onPlungeUp,
   onPlungeCancel,
+  lockedDesign,
+  onLockDesign,
+  onUnlockDesign,
 }) => {
   return (
     <div className="oneui-card p-2.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3 select-none" dir="ltr">
@@ -175,15 +181,31 @@ export const SemiRemotePad: React.FC<SemiRemotePadProps> = ({
           </div>
 
           {/* Quick Shortcut: Jump to Max Radius (r -> MAX) */}
-          <button
-            type="button"
-            onClick={onRadialMax}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs active:scale-95 transition-all cursor-pointer text-[10px] sm:text-[11px] font-bold"
-            title={t.btnRadialMax}
-          >
-            <Maximize2 className="w-3 h-3 text-emerald-600" />
-            <span>{t.btnRadialMax}</span>
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onRadialMax}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs active:scale-95 transition-all cursor-pointer text-[10px] sm:text-[11px] font-bold"
+              title={t.btnRadialMax}
+            >
+              <Maximize2 className="w-3 h-3 text-emerald-600" />
+              <span>{t.btnRadialMax}</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={lockedDesign ? onUnlockDesign : onLockDesign}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                lockedDesign 
+                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+                  : 'bg-white hover:bg-blue-50 text-blue-800 border-blue-200'
+              }`}
+              title={lockedDesign ? 'Unlock Design' : 'Lock/Save Design'}
+            >
+              {lockedDesign ? <Zap className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+              <span>{lockedDesign ? 'Unlock' : 'Save/Lock Design'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Right / Side: Samsung Style Rocker Switch Capsules (Table Z & Spindle Motor) */}

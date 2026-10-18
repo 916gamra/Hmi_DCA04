@@ -1,5 +1,5 @@
 import { norm360 } from './model';
-import { PlanHole } from './plan';
+import { PlanHole, ExecutionPlan } from './plan';
 
 export type ButtonActionType =
   | 'HOME' // 0° HOME table button
@@ -362,5 +362,171 @@ export function generateButtonMap(options: ButtonMapOptions): ButtonMapResult {
     totalHoles: totalHolesCount,
     breakdown,
     layersCount: activeRadii.length,
+  };
+}
+
+/**
+ * Generates the deterministic Button Map directly from an ExecutionPlan (e.g. user design or replay plan).
+ */
+export function generateButtonMapFromExecutionPlan(
+  plan: ExecutionPlan,
+  stepRadialMm: number = 15,
+  stepAngleDeg: number = 30
+): ButtonMapResult {
+  const steps: ButtonMapStep[] = [];
+  if (!plan || !plan.steps || plan.steps.length === 0) {
+    return {
+      steps: [],
+      condensedString: '(0 HOME) > (r MAX)',
+      totalPresses: 2,
+      totalPlunges: 0,
+      totalHoles: 0,
+      breakdown: { home: 1, rMax: 1, thetaMinus: 0, thetaPlus: 0, rMinus: 0, rPlus: 0, push: 0 },
+      layersCount: 0,
+    };
+  }
+
+  let stepIndex = 1;
+  let plungeCounter = 1;
+  let currentTheta = 0;
+  let currentR = plan.steps[0].rMm;
+
+  const breakdown: ButtonPressesBreakdown = {
+    home: 1,
+    rMax: 1,
+    thetaMinus: 0,
+    thetaPlus: 0,
+    rMinus: 0,
+    rPlus: 0,
+    push: 0,
+  };
+
+  // Step 1: (0 HOME)
+  steps.push({
+    stepIndex: stepIndex++,
+    action: 'HOME',
+    buttonLabel: '(0 HOME)',
+    pulses: 1,
+    rMm: currentR,
+    thetaDeg: 0,
+    layerIndex: 0,
+    layerName: 'L1',
+    explanationAr: 'تصفير طاولة التدوير عند زاوية المرجع 0°',
+    explanationEn: 'Home rotary table to reference 0°',
+  });
+
+  // Step 2: (r MAX)
+  steps.push({
+    stepIndex: stepIndex++,
+    action: 'R_MAX',
+    buttonLabel: '(r MAX)',
+    pulses: 1,
+    rMm: currentR,
+    thetaDeg: 0,
+    layerIndex: 0,
+    layerName: 'L1',
+    explanationAr: `تقديم الرؤوس الثلاثة إلى نصف القطر الأقصى (${currentR} مم)`,
+    explanationEn: `Advance 3 heads to outermost radius (${currentR}mm)`,
+  });
+
+  let lastR = currentR;
+
+  plan.steps.forEach((pStep) => {
+    // Check radial movement
+    if (pStep.rMm < lastR - 0.05) {
+      const deltaR = lastR - pStep.rMm;
+      const rPulses = Math.max(1, Math.round(deltaR / Math.max(0.1, stepRadialMm)));
+      steps.push({
+        stepIndex: stepIndex++,
+        action: 'R_MINUS',
+        buttonLabel: rPulses > 1 ? `(r−)×${rPulses}` : '(r−)',
+        pulses: rPulses,
+        rMm: pStep.rMm,
+        thetaDeg: currentTheta,
+        layerIndex: pStep.bandIndex - 1,
+        layerName: pStep.matchingLayerName,
+        explanationAr: `تحريك الرؤوس شعاعياً للداخل (r−) بمقدار ${deltaR.toFixed(1)} مم (${rPulses} نبضة)`,
+        explanationEn: `Move heads radially inward (r−) by ${deltaR.toFixed(1)}mm (${rPulses} pulses)`,
+      });
+      breakdown.rMinus += rPulses;
+      lastR = pStep.rMm;
+    } else if (pStep.rMm > lastR + 0.05) {
+      const deltaR = pStep.rMm - lastR;
+      const rPulses = Math.max(1, Math.round(deltaR / Math.max(0.1, stepRadialMm)));
+      steps.push({
+        stepIndex: stepIndex++,
+        action: 'R_PLUS',
+        buttonLabel: rPulses > 1 ? `(r+)×${rPulses}` : '(r+)',
+        pulses: rPulses,
+        rMm: pStep.rMm,
+        thetaDeg: currentTheta,
+        layerIndex: pStep.bandIndex - 1,
+        layerName: pStep.matchingLayerName,
+        explanationAr: `تحريك الرؤوس شعاعياً للخارج (r+) بمقدار ${deltaR.toFixed(1)} مم (${rPulses} نبضة)`,
+        explanationEn: `Move heads radially outward (r+) by ${deltaR.toFixed(1)}mm (${rPulses} pulses)`,
+      });
+      breakdown.rPlus += rPulses;
+      lastR = pStep.rMm;
+    }
+
+    // Check angular movement CW
+    const dCW = angleDistanceCW(currentTheta, pStep.thetaDeg);
+    if (dCW > 0.05 && dCW < 359.95) {
+      const thetaPulses = Math.max(1, Math.round(dCW / Math.max(0.1, stepAngleDeg)));
+      steps.push({
+        stepIndex: stepIndex++,
+        action: 'THETA_PLUS',
+        buttonLabel: thetaPulses > 1 ? `(θ+)×${thetaPulses}` : '(θ+)',
+        pulses: thetaPulses,
+        rMm: lastR,
+        thetaDeg: pStep.thetaDeg,
+        layerIndex: pStep.bandIndex - 1,
+        layerName: pStep.matchingLayerName,
+        explanationAr: `تدوير الطاولة CW بمقدار ${dCW}° (${thetaPulses} نبضة) إلى θ=${pStep.thetaDeg}°`,
+        explanationEn: `Rotate table CW by ${dCW}° (${thetaPulses} pulses) to θ=${pStep.thetaDeg}°`,
+      });
+      breakdown.thetaPlus += thetaPulses;
+      currentTheta = pStep.thetaDeg;
+    } else {
+      currentTheta = pStep.thetaDeg;
+    }
+
+    // PUSH
+    steps.push({
+      stepIndex: stepIndex++,
+      action: 'PUSH',
+      buttonLabel: '(PUSH)',
+      pulses: 1,
+      rMm: lastR,
+      thetaDeg: currentTheta,
+      layerIndex: pStep.bandIndex - 1,
+      layerName: pStep.matchingLayerName,
+      plungeIndex: plungeCounter++,
+      holesDrilled: pStep.holes,
+      explanationAr: `ضربة حفر متزامنة (${pStep.holesCount} ثقوب) عند r=${lastR} مم و θ=${currentTheta}°`,
+      explanationEn: `Synchronized plunge drill (${pStep.holesCount} holes) at r=${lastR}mm, θ=${currentTheta}°`,
+    });
+    breakdown.push += 1;
+  });
+
+  const totalPresses =
+    breakdown.home +
+    breakdown.rMax +
+    breakdown.thetaMinus +
+    breakdown.thetaPlus +
+    breakdown.rMinus +
+    breakdown.rPlus +
+    breakdown.push;
+
+  const condensedString = steps.map((s) => s.buttonLabel).join(' > ');
+
+  return {
+    steps,
+    condensedString,
+    totalPresses,
+    totalPlunges: breakdown.push,
+    totalHoles: plan.totalHoles,
+    breakdown,
+    layersCount: plan.totalBands,
   };
 }

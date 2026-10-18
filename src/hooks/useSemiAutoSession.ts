@@ -4,7 +4,7 @@ import { norm360 } from '../core/model';
 import { safeStorage } from '../core/safeStorage';
 import { HEADS } from '../core/constants';
 import { buildExecutionPlan, buildPreviewPlan, ExecutionPlan, PlanStep } from '../core/plan';
-import { generateButtonMap, ButtonMapResult } from '../core/buttonMap';
+import { generateButtonMap, generateButtonMapFromExecutionPlan, ButtonMapResult } from '../core/buttonMap';
 import { ViewOptions, TrayParams } from '../types';
 import { SemiSectionId } from '../components/semi/SemiParamsList';
 
@@ -41,6 +41,7 @@ export interface SemiAutoSavedState {
   numberingMode?: 'cam' | 'layer' | 'global';
   planSource?: 'preview' | 'replay';
   previewScope?: 'all' | 'currentLayer';
+  savedDesign?: SemiHole[];
 }
 
 function safeId(): string {
@@ -99,6 +100,7 @@ export interface UseSemiAutoSessionReturn {
   isMacroDrilling: boolean;
   setPlanSource: (src: 'preview' | 'replay') => void;
   setPreviewScope: (scope: 'all' | 'currentLayer') => void;
+  setCamSpeed: (speed: number) => void;
   setTrayDMm: (v: number) => void;
   setMarginMm: (v: number) => void;
   setLayersCount: (v: number) => void;
@@ -135,6 +137,9 @@ export interface UseSemiAutoSessionReturn {
   handleToggleSection: (id: SemiSectionId) => void;
   handleAutoDrillCurrentLayer: () => Promise<void>;
   handleCancelMacroDrill: () => void;
+  lockedDesign: SemiHole[] | null;
+  handleLockDesign: () => void;
+  handleUnlockDesign: () => void;
 }
 
 export function useSemiAutoSession(
@@ -278,6 +283,10 @@ export function useSemiAutoSession(
     return 'cam';
   });
 
+  const [lockedDesign, setLockedDesign] = useState<SemiHole[] | null>(() => {
+    return Array.isArray(savedState.savedDesign) ? savedState.savedDesign : null;
+  });
+
   // S1: Plan source & preview scope state
   const [planSource, setPlanSource] = useState<'preview' | 'replay'>(() => {
     if (savedState.planSource === 'replay' || savedState.planSource === 'preview') {
@@ -290,14 +299,15 @@ export function useSemiAutoSession(
     return savedState.previewScope === 'currentLayer' ? 'currentLayer' : 'all';
   });
 
-  // Replay plan: built from actual drilled holes
+  // Replay plan: built from actual drilled holes or locked design
   const actualPlan = useMemo<ExecutionPlan>(() => {
-    return buildExecutionPlan(holes, {
+    const designToUse = lockedDesign || holes;
+    return buildExecutionPlan(designToUse, {
       stepRadialMm,
       stepAngleDeg,
       ringRadii,
     });
-  }, [holes, stepRadialMm, stepAngleDeg, ringRadii]);
+  }, [holes, lockedDesign, stepRadialMm, stepAngleDeg, ringRadii]);
 
   // Preview plan: built from theoretical geometric grid (even if holes = [])
   const previewPlan = useMemo<ExecutionPlan>(() => {
@@ -329,17 +339,10 @@ export function useSemiAutoSession(
   const [isTableRotatingCW, setIsTableRotatingCW] = useState<boolean>(false);
   const [isPlungeVisual, setIsPlungeVisual] = useState<boolean>(false);
 
-  // S4: Deterministic Button Map generated from design geometry
+  // S4: Deterministic Button Map generated directly from the active execution plan (user design or preview grid)
   const buttonMap = useMemo<ButtonMapResult>(() => {
-    return generateButtonMap({
-      ringRadii,
-      nPoints,
-      stepAngleDeg,
-      stepRadialMm,
-      rHeadMinMm,
-      layerFilter: previewScope === 'currentLayer' ? currentLayer : undefined,
-    });
-  }, [ringRadii, nPoints, stepAngleDeg, stepRadialMm, rHeadMinMm, previewScope, currentLayer]);
+    return generateButtonMapFromExecutionPlan(executionPlan, stepRadialMm, stepAngleDeg);
+  }, [executionPlan, stepRadialMm, stepAngleDeg]);
 
   // S3: Macro auto-drill state
   const [isMacroDrilling, setIsMacroDrilling] = useState<boolean>(false);
@@ -590,6 +593,7 @@ export function useSemiAutoSession(
       numberingMode,
       planSource,
       previewScope,
+      savedDesign: lockedDesign,
     };
     safeStorage.setJSON(STORAGE_KEY_SEMI, payload);
   }, [
@@ -612,6 +616,7 @@ export function useSemiAutoSession(
     numberingMode,
     planSource,
     previewScope,
+    lockedDesign,
   ]);
 
   useEffect(() => {
@@ -874,6 +879,15 @@ export function useSemiAutoSession(
     setOpenSection((prev) => (prev === id ? null : id));
   }, []);
 
+  const handleLockDesign = useCallback(() => {
+    setLockedDesign(holes);
+    setPlanSource('replay');
+  }, [holes]);
+
+  const handleUnlockDesign = useCallback(() => {
+    setLockedDesign(null);
+  }, []);
+
   // S3: Macro auto-drill current layer
   const handleCancelMacroDrill = useCallback(() => {
     macroCancelRef.current = true;
@@ -1053,6 +1067,7 @@ export function useSemiAutoSession(
     isMacroDrilling,
     setPlanSource,
     setPreviewScope,
+    setCamSpeed,
     setTrayDMm,
     setMarginMm,
     setLayersCount,
@@ -1088,5 +1103,8 @@ export function useSemiAutoSession(
     handleToggleSection,
     handleAutoDrillCurrentLayer,
     handleCancelMacroDrill,
+    lockedDesign,
+    handleLockDesign,
+    handleUnlockDesign,
   };
 }

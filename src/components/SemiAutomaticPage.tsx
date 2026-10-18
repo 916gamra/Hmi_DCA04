@@ -111,6 +111,9 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     handleToggleSection,
     handleAutoDrillCurrentLayer,
     handleCancelMacroDrill,
+    lockedDesign,
+    handleLockDesign,
+    handleUnlockDesign,
   } = session;
 
   const paramsList = (
@@ -231,6 +234,9 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       onSetCamSpeed={setCamSpeed}
       buttonMap={buttonMap}
       onShowToast={onShowToast}
+      lockedDesign={lockedDesign}
+      onLockDesign={handleLockDesign}
+      onUnlockDesign={handleUnlockDesign}
     />
   );
 };
