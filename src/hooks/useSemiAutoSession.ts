@@ -5,8 +5,8 @@ import { safeStorage } from '../core/safeStorage';
 import { HEADS } from '../core/constants';
 import { buildExecutionPlan, buildPreviewPlan, ExecutionPlan, PlanStep } from '../core/plan';
 import { generateButtonMap, generateButtonMapFromExecutionPlan, ButtonMapResult } from '../core/buttonMap';
-import { ViewOptions, TrayParams, SemiHole } from '../types';
-export type { SemiHole };
+import { ViewOptions, TrayParams, SemiHole, SemiSectionId } from '../types';
+export type { SemiHole, SemiSectionId };
 
 
 export const STORAGE_KEY_SEMI = 'hmi-tray-semiauto-state-v4';
@@ -32,7 +32,7 @@ export interface SemiAutoSavedState {
   numberingMode?: 'cam' | 'layer' | 'global';
   planSource?: 'preview' | 'replay';
   previewScope?: 'all' | 'currentLayer';
-  savedDesign?: SemiHole[];
+  savedDesign?: SemiHole[] | null;
 }
 
 function safeId(): string {
@@ -76,6 +76,8 @@ export interface UseSemiAutoSessionReturn {
   previewScope: 'all' | 'currentLayer';
   camSpeed: number;
   camPlaybackStep: number | null;
+  mapPlaybackStep: number | null;
+  setMapPlaybackStep: (step: number | null | ((prev: number | null) => number | null)) => void;
   isPlayingCam: boolean;
   isMobileDrawerOpen: boolean;
   isClearConfirmOpen: boolean;
@@ -311,14 +313,18 @@ export function useSemiAutoSession(
     });
   }, [ringRadii, nPoints, stepAngleDeg, stepRadialMm, previewScope, currentLayer]);
 
-  // Active execution plan: replay if holes exist and replay selected, otherwise preview
+  // Active execution plan: prioritize locked user design, or replay if holes exist and replay selected, otherwise preview
   const executionPlan = useMemo<ExecutionPlan>(() => {
+    if (lockedDesign && lockedDesign.length > 0) {
+      return actualPlan;
+    }
     if (planSource === 'replay' && holes.length > 0) {
       return actualPlan;
     }
     return previewPlan;
-  }, [planSource, holes.length, actualPlan, previewPlan]);
+  }, [lockedDesign, planSource, holes.length, actualPlan, previewPlan]);
 
+  const [mapPlaybackStep, setMapPlaybackStep] = useState<number | null>(null);
   const [camPlaybackStep, setCamPlaybackStep] = useState<number | null>(null);
   const [camSpeed, setCamSpeed] = useState<number>(1);
   const [isPlayingCam, setIsPlayingCam] = useState<boolean>(false);
@@ -341,32 +347,26 @@ export function useSemiAutoSession(
 
   const displayThetaRef = useRef<number>(thetaDeg);
   const displayRRef = useRef<number>(rMm);
-  const isPlayingCamRef = useRef<boolean>(isPlayingCam);
-  isPlayingCamRef.current = isPlayingCam;
 
-  const executionPlanRef = useRef<ExecutionPlan>(executionPlan);
-  executionPlanRef.current = executionPlan;
-
-  const animFrameRef = useRef<number | null>(null);
-  const animTimeoutRef = useRef<number | null>(null);
-
-  // Clamp camPlaybackStep if totalPlunges changes
+  // Clamp mapPlaybackStep if total buttonMap steps change
   useEffect(() => {
-    if (camPlaybackStep !== null && executionPlan.totalPlunges > 0 && camPlaybackStep > executionPlan.totalPlunges) {
-      setCamPlaybackStep(executionPlan.totalPlunges);
+    if (mapPlaybackStep !== null && buttonMap.steps.length > 0 && mapPlaybackStep > buttonMap.steps.length) {
+      setMapPlaybackStep(buttonMap.steps.length);
     }
-  }, [executionPlan.totalPlunges, camPlaybackStep]);
+  }, [buttonMap.steps.length, mapPlaybackStep]);
 
   // Keep display synchronized with manual machine adjustments when not in preview/replay
   useEffect(() => {
-    if (camPlaybackStep === null) {
+    if (mapPlaybackStep === null && camPlaybackStep === null) {
       setDisplayTheta(thetaDeg);
       displayThetaRef.current = thetaDeg;
       setDisplayR(rMm);
       displayRRef.current = rMm;
       setIsTableRotatingCW(false);
+      setIsPlungeVisual(false);
+      setIsAnimating(false);
     }
-  }, [camPlaybackStep, thetaDeg, rMm]);
+  }, [mapPlaybackStep, camPlaybackStep, thetaDeg, rMm]);
 
   const activePlaybackStep = useMemo<PlanStep | null>(() => {
     if (camPlaybackStep !== null && executionPlan.steps[camPlaybackStep - 1]) {
@@ -375,150 +375,217 @@ export function useSemiAutoSession(
     return null;
   }, [camPlaybackStep, executionPlan.steps]);
 
-  // S4: Strict Unidirectional Clockwise (CW) mechanical interpolation animation
+  // S4: Playback execution engine driven strictly by buttonMap.steps
   useEffect(() => {
-    if (activePlaybackStep) {
-      const targetR = activePlaybackStep.rMm;
-      const targetTheta = activePlaybackStep.thetaDeg;
+    if (mapPlaybackStep === null || !buttonMap.steps || buttonMap.steps.length === 0) {
+      return;
+    }
 
-      if (animFrameRef.current !== null) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      if (animTimeoutRef.current !== null) {
-        clearTimeout(animTimeoutRef.current);
-        animTimeoutRef.current = null;
-      }
+    const curIndex = Math.min(Math.max(1, mapPlaybackStep), buttonMap.steps.length);
+    const stepObj = buttonMap.steps[curIndex - 1];
+    if (!stepObj) return;
 
-      const startR = displayRRef.current;
-      const startTheta = displayThetaRef.current;
-      const startTime = performance.now();
+    const timeoutIds: number[] = [];
+    const schedule = (fn: () => void, delayMs: number) => {
+      const id = window.setTimeout(fn, Math.max(0, delayMs));
+      timeoutIds.push(id);
+      return id;
+    };
 
-      // Clockwise (CW) angular distance in machine table coordinates
-      const dCW = (norm360(startTheta) - norm360(targetTheta) + 360) % 360;
-      const hasAngularMove = dCW > 0.05 && dCW < 359.95;
-      const deltaR = targetR - startR;
-      const hasRadialMove = Math.abs(deltaR) > 0.05;
+    const effectiveSpeed = Math.max(0.1, camSpeed);
+    const cwSign = -1; // Unidirectional Clockwise direction (matches table CW stepping)
 
-      // 2-Phase mechanical timing:
-      // When both radial and angular change (layer transition):
-      // 1. Table stops at last hole while radial carriage steps inward (Phase 1)
-      // 2. Table rotates strictly Clockwise (CW) to next hole (Phase 2)
-      const rDuration = (hasRadialMove ? 220 : 0) / camSpeed;
-      const thetaDuration = (hasAngularMove ? 260 : 0) / camSpeed;
-      const totalDuration =
-        hasRadialMove && hasAngularMove
-          ? rDuration + thetaDuration
-          : Math.max(rDuration, thetaDuration, 180 / camSpeed);
-
-      setIsAnimating(true);
-      setIsTableRotatingCW(hasAngularMove);
-      setIsPlungeVisual(false);
-
-      const stepFrame = (now: number) => {
-        const elapsed = now - startTime;
-
-        let curR = startR;
-        let curTheta = startTheta;
-
-        if (hasRadialMove && hasAngularMove) {
-          if (elapsed <= rDuration) {
-            // Phase 1: Radial inward movement. Table remains stationary at last hole!
-            const rProgress = Math.min(1, elapsed / rDuration);
-            const rEase = 1 - Math.pow(1 - rProgress, 3);
-            curR = Number((startR + deltaR * rEase).toFixed(2));
-            curTheta = startTheta;
-          } else {
-            // Phase 2: Rotary table indexes Clockwise (CW) to target angle!
-            curR = targetR;
-            const thetaElapsed = elapsed - rDuration;
-            const thetaProgress = Math.min(1, thetaElapsed / thetaDuration);
-            const thetaEase = 1 - Math.pow(1 - thetaProgress, 3);
-            curTheta = Number(norm360(startTheta - dCW * thetaEase).toFixed(2));
-          }
-        } else if (hasRadialMove) {
-          const rProgress = Math.min(1, elapsed / totalDuration);
-          const rEase = 1 - Math.pow(1 - rProgress, 3);
-          curR = Number((startR + deltaR * rEase).toFixed(2));
-          curTheta = startTheta;
-        } else if (hasAngularMove) {
-          const thetaProgress = Math.min(1, elapsed / totalDuration);
-          const thetaEase = 1 - Math.pow(1 - thetaProgress, 3);
-          curR = startR;
-          curTheta = Number(norm360(startTheta - dCW * thetaEase).toFixed(2));
-        } else {
-          curR = targetR;
-          curTheta = targetTheta;
-        }
-
-        setDisplayR(curR);
-        displayRRef.current = curR;
-        setDisplayTheta(curTheta);
-        displayThetaRef.current = curTheta;
-
-        if (elapsed < totalDuration) {
-          animFrameRef.current = requestAnimationFrame(stepFrame);
-        } else {
-          setDisplayR(targetR);
-          displayRRef.current = targetR;
-          setDisplayTheta(targetTheta);
-          displayThetaRef.current = targetTheta;
-          setIsAnimating(false);
-          setIsTableRotatingCW(false);
-          animFrameRef.current = null;
-
-          // Visual plunge flash for 150ms / camSpeed
-          setIsPlungeVisual(true);
-          animTimeoutRef.current = window.setTimeout(() => {
-            setIsPlungeVisual(false);
-            animTimeoutRef.current = null;
-
-            if (isPlayingCamRef.current) {
-              animTimeoutRef.current = window.setTimeout(() => {
-                animTimeoutRef.current = null;
-                if (isPlayingCamRef.current) {
-                  setCamPlaybackStep((prev) => {
-                    const cur = prev ?? 1;
-                    const total = executionPlanRef.current.steps.length;
-                    if (cur >= total) {
-                      setIsPlayingCam(false);
-                      return cur;
-                    }
-                    return cur + 1;
-                  });
-                }
-              }, 180 / camSpeed);
-            }
-          }, 150 / camSpeed);
-        }
-      };
-
-      animFrameRef.current = requestAnimationFrame(stepFrame);
-    } else {
-      if (animFrameRef.current !== null) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      if (animTimeoutRef.current !== null) {
-        clearTimeout(animTimeoutRef.current);
-        animTimeoutRef.current = null;
-      }
-      setIsAnimating(false);
+    // Mode 1: Manual scrub / step / pause — position directly at this button step
+    if (!isPlayingCam) {
+      displayThetaRef.current = stepObj.thetaDeg;
+      setDisplayTheta(stepObj.thetaDeg);
+      displayRRef.current = stepObj.rMm;
+      setDisplayR(stepObj.rMm);
       setIsTableRotatingCW(false);
+      setIsAnimating(false);
+
+      if (stepObj.action === 'PUSH') {
+        setCamPlaybackStep(stepObj.plungeIndex ?? null);
+        setIsPlungeVisual(true);
+        schedule(() => setIsPlungeVisual(false), 150 / effectiveSpeed);
+      } else {
+        setIsPlungeVisual(false);
+      }
+      return () => {
+        timeoutIds.forEach((id) => clearTimeout(id));
+      };
+    }
+
+    // Mode 2: isPlayingCam === true — pulse-by-pulse execution per action
+    setIsAnimating(true);
+
+    if (stepObj.action === 'HOME') {
       setIsPlungeVisual(false);
+      setIsTableRotatingCW(false);
+      displayThetaRef.current = 0;
+      setDisplayTheta(0);
+
+      const duration = 120 / effectiveSpeed;
+      schedule(() => {
+        setIsAnimating(false);
+        if (curIndex >= buttonMap.steps.length) {
+          setIsPlayingCam(false);
+        } else {
+          setMapPlaybackStep(curIndex + 1);
+        }
+      }, duration);
+    } else if (stepObj.action === 'R_MAX') {
+      setIsPlungeVisual(false);
+      setIsTableRotatingCW(false);
+      displayRRef.current = stepObj.rMm;
+      setDisplayR(stepObj.rMm);
+
+      const duration = 120 / effectiveSpeed;
+      schedule(() => {
+        setIsAnimating(false);
+        if (curIndex >= buttonMap.steps.length) {
+          setIsPlayingCam(false);
+        } else {
+          setMapPlaybackStep(curIndex + 1);
+        }
+      }, duration);
+    } else if (stepObj.action === 'THETA_PLUS' || stepObj.action === 'THETA_MINUS') {
+      setIsPlungeVisual(false);
+      setIsTableRotatingCW(true);
+
+      const pulses = Math.max(1, stepObj.pulses);
+      const pulseDuration = 85 / effectiveSpeed;
+      const startTheta = displayThetaRef.current;
+
+      for (let p = 1; p <= pulses; p++) {
+        schedule(() => {
+          const nextTheta =
+            p === pulses
+              ? stepObj.thetaDeg
+              : norm360(startTheta + p * cwSign * stepAngleDeg);
+          displayThetaRef.current = nextTheta;
+          setDisplayTheta(nextTheta);
+
+          if (p === pulses) {
+            setIsTableRotatingCW(false);
+          }
+        }, p * pulseDuration);
+      }
+
+      const totalStepTime = pulses * pulseDuration + 35 / effectiveSpeed;
+      schedule(() => {
+        setIsTableRotatingCW(false);
+        setIsAnimating(false);
+        displayThetaRef.current = stepObj.thetaDeg;
+        setDisplayTheta(stepObj.thetaDeg);
+
+        if (curIndex >= buttonMap.steps.length) {
+          setIsPlayingCam(false);
+        } else {
+          setMapPlaybackStep(curIndex + 1);
+        }
+      }, totalStepTime);
+    } else if (stepObj.action === 'R_MINUS') {
+      setIsPlungeVisual(false);
+      setIsTableRotatingCW(false);
+
+      const pulses = Math.max(1, stepObj.pulses);
+      const pulseDuration = 85 / effectiveSpeed;
+      const startR = displayRRef.current;
+
+      for (let p = 1; p <= pulses; p++) {
+        schedule(() => {
+          const nextR =
+            p === pulses
+              ? stepObj.rMm
+              : Math.max(rHeadMinMm, startR - p * stepRadialMm);
+          displayRRef.current = nextR;
+          setDisplayR(nextR);
+        }, p * pulseDuration);
+      }
+
+      const totalStepTime = pulses * pulseDuration + 35 / effectiveSpeed;
+      schedule(() => {
+        setIsAnimating(false);
+        displayRRef.current = stepObj.rMm;
+        setDisplayR(stepObj.rMm);
+
+        if (curIndex >= buttonMap.steps.length) {
+          setIsPlayingCam(false);
+        } else {
+          setMapPlaybackStep(curIndex + 1);
+        }
+      }, totalStepTime);
+    } else if (stepObj.action === 'R_PLUS') {
+      setIsPlungeVisual(false);
+      setIsTableRotatingCW(false);
+
+      const pulses = Math.max(1, stepObj.pulses);
+      const pulseDuration = 85 / effectiveSpeed;
+      const startR = displayRRef.current;
+
+      for (let p = 1; p <= pulses; p++) {
+        schedule(() => {
+          const nextR =
+            p === pulses
+              ? stepObj.rMm
+              : Math.min(R, startR + p * stepRadialMm);
+          displayRRef.current = nextR;
+          setDisplayR(nextR);
+        }, p * pulseDuration);
+      }
+
+      const totalStepTime = pulses * pulseDuration + 35 / effectiveSpeed;
+      schedule(() => {
+        setIsAnimating(false);
+        displayRRef.current = stepObj.rMm;
+        setDisplayR(stepObj.rMm);
+
+        if (curIndex >= buttonMap.steps.length) {
+          setIsPlayingCam(false);
+        } else {
+          setMapPlaybackStep(curIndex + 1);
+        }
+      }, totalStepTime);
+    } else if (stepObj.action === 'PUSH') {
+      // PUSH: Flash plunge at current θ and r — DO NOT change θ or r!
+      setIsTableRotatingCW(false);
+      setIsPlungeVisual(true);
+      setCamPlaybackStep(stepObj.plungeIndex ?? null);
+
+      const dwellDuration = Math.max(130, (dwellSec > 0 ? dwellSec * 1000 * 0.4 : 130)) / effectiveSpeed;
+      schedule(() => {
+        setIsPlungeVisual(false);
+      }, dwellDuration);
+
+      const totalPushTime = dwellDuration + 50 / effectiveSpeed;
+      schedule(() => {
+        setIsAnimating(false);
+        if (curIndex >= buttonMap.steps.length) {
+          setIsPlayingCam(false);
+        } else {
+          setMapPlaybackStep(curIndex + 1);
+        }
+      }, totalPushTime);
     }
 
     return () => {
-      if (animFrameRef.current !== null) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      if (animTimeoutRef.current !== null) {
-        clearTimeout(animTimeoutRef.current);
-        animTimeoutRef.current = null;
-      }
+      timeoutIds.forEach((id) => clearTimeout(id));
+      setIsTableRotatingCW(false);
+      setIsPlungeVisual(false);
+      setIsAnimating(false);
     };
-  }, [activePlaybackStep]);
+  }, [
+    mapPlaybackStep,
+    isPlayingCam,
+    camSpeed,
+    buttonMap,
+    stepAngleDeg,
+    stepRadialMm,
+    rHeadMinMm,
+    R,
+    dwellSec,
+  ]);
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState<boolean>(false);
@@ -683,25 +750,29 @@ export function useSemiAutoSession(
 
   const handleSyncMachineToStep = useCallback(
     (stepIdx?: number) => {
-      const targetIdx = stepIdx ?? camPlaybackStep ?? 1;
-      const st = executionPlan.steps[targetIdx - 1];
-      if (st) {
-        setRMm(st.rMm);
-        setThetaDeg(st.thetaDeg);
-        setDisplayR(st.rMm);
-        displayRRef.current = st.rMm;
-        setDisplayTheta(st.thetaDeg);
-        displayThetaRef.current = st.thetaDeg;
+      const targetStep =
+        (mapPlaybackStep !== null && buttonMap.steps[mapPlaybackStep - 1]) ||
+        (stepIdx && executionPlan.steps[stepIdx - 1]) ||
+        (camPlaybackStep && executionPlan.steps[camPlaybackStep - 1]) ||
+        (buttonMap.steps.length > 0 ? buttonMap.steps[0] : null);
+
+      if (targetStep) {
+        setRMm(targetStep.rMm);
+        setThetaDeg(targetStep.thetaDeg);
+        setDisplayR(targetStep.rMm);
+        displayRRef.current = targetStep.rMm;
+        setDisplayTheta(targetStep.thetaDeg);
+        displayThetaRef.current = targetStep.thetaDeg;
         if (onShowToast) {
           onShowToast(
             isAr
-              ? `تمت مزامنة الآلة مع الخطوة #${st.stepIndex} (r=${st.rMm} مم، θ=${st.thetaDeg}°)`
-              : `Machine synchronisée sur l'étape #${st.stepIndex} (r=${st.rMm}mm, θ=${st.thetaDeg}°)`
+              ? `تمت مزامنة الآلة مع الخطوة #${targetStep.stepIndex} (r=${targetStep.rMm} مم، θ=${targetStep.thetaDeg}°)`
+              : `Machine synchronisée sur l'étape #${targetStep.stepIndex} (r=${targetStep.rMm}mm, θ=${targetStep.thetaDeg}°)`
           );
         }
       }
     },
-    [camPlaybackStep, executionPlan.steps, onShowToast, isAr]
+    [mapPlaybackStep, buttonMap.steps, camPlaybackStep, executionPlan.steps, onShowToast, isAr]
   );
 
   const plungeTimerRef = useRef<number | null>(null);
@@ -841,25 +912,84 @@ export function useSemiAutoSession(
     [r1, rMm]
   );
 
+  const handleSetCamPlaybackStep = useCallback(
+    (step: number | null) => {
+      setCamPlaybackStep(step);
+      if (step === null) {
+        setMapPlaybackStep(null);
+        setDisplayTheta(thetaDeg);
+        displayThetaRef.current = thetaDeg;
+        setDisplayR(rMm);
+        displayRRef.current = rMm;
+      } else {
+        const match = buttonMap.steps.find((s) => s.action === 'PUSH' && s.plungeIndex === step);
+        if (match) {
+          setMapPlaybackStep(match.stepIndex);
+          setDisplayTheta(match.thetaDeg);
+          displayThetaRef.current = match.thetaDeg;
+          setDisplayR(match.rMm);
+          displayRRef.current = match.rMm;
+        } else if (executionPlan.steps[step - 1]) {
+          const planSt = executionPlan.steps[step - 1];
+          setDisplayTheta(planSt.thetaDeg);
+          displayThetaRef.current = planSt.thetaDeg;
+          setDisplayR(planSt.rMm);
+          displayRRef.current = planSt.rMm;
+        }
+      }
+    },
+    [buttonMap.steps, executionPlan.steps, thetaDeg, rMm]
+  );
+
   const handleStepPrev = useCallback(() => {
-    setCamPlaybackStep((prev) => Math.max(1, (prev ?? 1) - 1));
-  }, []);
+    const total = executionPlan.totalPlunges;
+    if (total === 0) return;
+    const prevStep = Math.max(1, (camPlaybackStep ?? 2) - 1);
+    handleSetCamPlaybackStep(prevStep);
+  }, [executionPlan.totalPlunges, camPlaybackStep, handleSetCamPlaybackStep]);
 
   const handleStepNext = useCallback(() => {
-    setCamPlaybackStep((prev) => Math.min(executionPlan.totalPlunges, (prev ?? 0) + 1));
-  }, [executionPlan.totalPlunges]);
+    const total = executionPlan.totalPlunges;
+    if (total === 0) return;
+    const nextStep = Math.min(total, (camPlaybackStep ?? 0) + 1);
+    handleSetCamPlaybackStep(nextStep);
+  }, [executionPlan.totalPlunges, camPlaybackStep, handleSetCamPlaybackStep]);
 
   const handleTogglePlayCam = useCallback(() => {
-    if (camPlaybackStep === null) {
-      setCamPlaybackStep(1);
+    if (!buttonMap.steps || buttonMap.steps.length === 0) {
+      if (onShowToast) {
+        onShowToast(isAr ? 'لا توجد خطوات للمحاكاة' : 'Aucune étape à simuler');
+      }
+      return;
     }
-    setIsPlayingCam((prev) => !prev);
-  }, [camPlaybackStep]);
+
+    setIsPlayingCam((prev) => {
+      const willPlay = !prev;
+      if (willPlay) {
+        setMapPlaybackStep((curMap) => {
+          if (curMap === null || curMap >= buttonMap.steps.length) {
+            return 1;
+          }
+          return curMap;
+        });
+        setCamPlaybackStep((curCam) => {
+          if (curCam === null || (executionPlan.totalPlunges > 0 && curCam >= executionPlan.totalPlunges)) {
+            return 1;
+          }
+          return curCam;
+        });
+      }
+      return willPlay;
+    });
+  }, [buttonMap.steps, executionPlan.totalPlunges, onShowToast, isAr]);
 
   const handleExitCamPreview = useCallback(() => {
+    setMapPlaybackStep(null);
     setCamPlaybackStep(null);
     setIsPlayingCam(false);
     setIsPlungeVisual(false);
+    setIsTableRotatingCW(false);
+    setIsAnimating(false);
     setDisplayR(rMm);
     displayRRef.current = rMm;
     setDisplayTheta(thetaDeg);
@@ -867,7 +997,7 @@ export function useSemiAutoSession(
   }, [rMm, thetaDeg]);
 
   const handleToggleSection = useCallback((id: SemiSectionId) => {
-    setOpenSection((prev) => (prev === id ? null : id));
+    setOpenSection((prev: SemiSectionId | null) => (prev === id ? null : id));
   }, []);
 
   const handleLockDesign = useCallback(() => {
@@ -1042,7 +1172,10 @@ export function useSemiAutoSession(
     planSource,
     previewScope,
     camPlaybackStep,
-    setCamPlaybackStep,
+    setCamPlaybackStep: handleSetCamPlaybackStep,
+    camSpeed,
+    mapPlaybackStep,
+    setMapPlaybackStep,
     isPlayingCam,
     isMobileDrawerOpen,
     isClearConfirmOpen,

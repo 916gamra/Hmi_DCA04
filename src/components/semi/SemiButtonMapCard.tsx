@@ -99,6 +99,52 @@ export const SemiButtonMapCard: React.FC<SemiButtonMapCardProps> = ({
     }
   };
 
+  const renderFormulaToken = (st: ButtonMapStep) => {
+    let actionColor = 'text-slate-700 bg-slate-50 border-slate-200';
+    let actionText = '';
+
+    if (st.action === 'HOME') {
+      actionText = '0 HOME';
+      actionColor = 'text-indigo-700 bg-indigo-50/90 border-indigo-200';
+    } else if (st.action === 'R_MAX') {
+      actionText = 'r MAX';
+      actionColor = 'text-teal-700 bg-teal-50/90 border-teal-200';
+    } else if (st.action === 'R_MINUS') {
+      actionText = 'r−';
+      actionColor = 'text-amber-800 bg-amber-50/90 border-amber-200';
+    } else if (st.action === 'R_PLUS') {
+      actionText = 'r+';
+      actionColor = 'text-emerald-700 bg-emerald-50/90 border-emerald-200';
+    } else if (st.action === 'PUSH') {
+      actionText = 'PUSH';
+      actionColor = 'text-rose-700 bg-rose-50 border-rose-300 font-black shadow-2xs';
+    } else if (st.action === 'THETA_PLUS') {
+      actionText = 'θ+';
+      actionColor = 'text-blue-700 bg-blue-50/90 border-blue-200';
+    } else if (st.action === 'THETA_MINUS') {
+      actionText = 'θ−';
+      actionColor = 'text-blue-700 bg-blue-50/90 border-blue-200';
+    } else {
+      actionText = st.action;
+    }
+
+    return (
+      <span className="inline-flex items-center text-xs font-mono select-text">
+        <span className="text-slate-400 font-bold select-none mx-0.5">(</span>
+        <span className={`inline-block px-1.5 py-0.5 rounded-md border text-[11px] font-bold ${actionColor}`}>
+          {actionText}
+        </span>
+        <span className="text-slate-400 font-bold select-none mx-0.5">)</span>
+        {st.pulses > 1 && (
+          <span className="inline-flex items-center ml-0.5 px-1.5 py-0.5 rounded-md bg-purple-50 border border-purple-200/90 text-purple-700 font-mono text-[11px] font-extrabold shadow-2xs">
+            <span className="text-purple-500 font-black mr-0.5 select-none">×</span>
+            <span>{st.pulses}</span>
+          </span>
+        )}
+      </span>
+    );
+  };
+
   if (!buttonMap || buttonMap.steps.length === 0) {
     return null;
   }
@@ -157,7 +203,7 @@ export const SemiButtonMapCard: React.FC<SemiButtonMapCardProps> = ({
 
       {/* 2. Button Presses Breakdown Chips */}
       <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono font-semibold" dir="ltr">
-        <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+        <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
           (0 HOME): <strong>{buttonMap.breakdown.home}</strong>
         </span>
         <span className="px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">
@@ -171,7 +217,12 @@ export const SemiButtonMapCard: React.FC<SemiButtonMapCardProps> = ({
             (r−): <strong>{buttonMap.breakdown.rMinus}</strong>
           </span>
         )}
-        <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+        {buttonMap.breakdown.rPlus > 0 && (
+          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+            (r+): <strong>{buttonMap.breakdown.rPlus}</strong>
+          </span>
+        )}
+        <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 font-black">
           (PUSH): <strong>{buttonMap.breakdown.push}</strong>
         </span>
         <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 ml-auto">
@@ -181,31 +232,30 @@ export const SemiButtonMapCard: React.FC<SemiButtonMapCardProps> = ({
 
       {/* 3. Condensed Button Sequence Banner (Excel Formula Light UI Style) */}
       <div className="flex flex-col gap-1.5">
-        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center justify-between">
-          <span>{t.buttonMapCondensedLabel}</span>
-          <span className="text-[9px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Formula Bar</span>
+        <div className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-emerald-600 text-white font-serif italic text-xs font-black shadow-2xs">
+              fx
+            </span>
+            <span className="text-slate-800 font-sans">{t.buttonMapCondensedLabel}</span>
+          </div>
+          <span className="text-[10px] text-emerald-800 font-mono font-bold bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
+            Excel Formula Bar
+          </span>
         </div>
         <div
-          className="bg-slate-50/90 border border-slate-200 rounded-2xl p-3 flex flex-wrap items-center gap-1.5 shadow-inner font-mono text-xs max-h-36 overflow-y-auto oneui-scrollbar select-text"
+          className="bg-white border-2 border-slate-200 hover:border-emerald-500/70 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center gap-y-2 gap-x-1 shadow-xs font-mono text-xs max-h-36 overflow-y-auto oneui-scrollbar select-text transition-colors"
           dir="ltr"
         >
-          {buttonMap.steps.map((st, idx) => {
-            let badgeStyle = 'bg-slate-100 text-slate-800 border-slate-200';
-            if (st.action === 'HOME') badgeStyle = 'bg-purple-50 text-purple-700 border-purple-200';
-            else if (st.action === 'R_MAX') badgeStyle = 'bg-teal-50 text-teal-700 border-teal-200';
-            else if (st.action === 'THETA_PLUS' || st.action === 'THETA_MINUS') badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
-            else if (st.action === 'R_MINUS' || st.action === 'R_PLUS') badgeStyle = 'bg-amber-50 text-amber-800 border-amber-200';
-            else if (st.action === 'PUSH') badgeStyle = 'bg-rose-50 text-rose-700 border-rose-300 font-extrabold shadow-2xs';
-
-            return (
-              <React.Fragment key={st.stepIndex}>
-                {idx > 0 && <span className="text-slate-400 font-bold select-none text-[11px]">&gt;</span>}
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] sm:text-xs font-bold transition-all ${badgeStyle}`}>
-                  {st.buttonLabel}
-                </span>
-              </React.Fragment>
-            );
-          })}
+          <span className="text-emerald-700 font-black text-sm select-none mr-1.5 font-mono">=</span>
+          {buttonMap.steps.map((st, idx) => (
+            <React.Fragment key={st.stepIndex}>
+              {idx > 0 && (
+                <span className="text-slate-400 font-extrabold select-none text-[11px] mx-1">&gt;</span>
+              )}
+              {renderFormulaToken(st)}
+            </React.Fragment>
+          ))}
         </div>
       </div>
 

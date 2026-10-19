@@ -169,7 +169,6 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       onExitPreview={handleExitCamPreview}
       buttonMap={buttonMap}
       onShowToast={onShowToast}
-      onSetCamSpeed={setCamSpeed}
     />
   );
 

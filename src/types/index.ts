@@ -164,3 +164,5 @@ export interface SemiHole {
   head: 0 | 1 | 2;
   drilledAt: number;
 }
+
+export type SemiSectionId = 'geo' | 'pts' | 'timing' | 'modes' | 'safety' | 'plan' | 'bmap';

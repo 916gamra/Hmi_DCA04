@@ -6,7 +6,7 @@ import { SemiMobileDrawer } from '../semi/SemiMobileDrawer';
 import { SemiSimulationControls } from '../SemiSimulationControls';
 import { SemiButtonMapCard } from '../semi/SemiButtonMapCard';
 import { ButtonMapResult } from '../../core/buttonMap';
-import { TrayModel, SimulationState, ViewOptions } from '../../types';
+import { TrayModel, SimulationState, ViewOptions, SemiHole } from '../../types';
 import { Translations, Language } from '../../core/i18n';
 import { SlidersHorizontal } from 'lucide-react';
 import { ConfirmModal } from '../ConfirmModal';

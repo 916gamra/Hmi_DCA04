@@ -105,7 +105,7 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
               <button
                 key={s}
                 type="button"
-                onClick={() => onSetCamSpeed(s)}
+                onClick={() => onSetCamSpeed?.(s)}
                 className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
                   camSpeed === s
                     ? 'bg-white text-blue-700 shadow-2xs font-bold'

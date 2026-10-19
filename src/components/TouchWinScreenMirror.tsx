@@ -108,7 +108,7 @@ export const TouchWinScreenMirror: React.FC<TouchWinScreenMirrorProps> = ({
       subtitle: 'المعاملات اليدوية للزاوية والتمدد',
       lines: [
         ' manual parameters  ',
-        `rotation angle     ${params.add.toFixed(1).padStart(4, ' ')}°`,
+        `rotation angle     ${params.addAngle.toFixed(1).padStart(4, ' ')}°`,
         `expansion length : ${String(params.spacing).padEnd(4, ' ')} MM`,
         `deflower time      ${(params.timing.dwell / 1000).toFixed(2)} S`,
       ],

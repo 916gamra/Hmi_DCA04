@@ -23,6 +23,9 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
     numberingMode,
     executionPlan,
     camPlaybackStep,
+    mapPlaybackStep,
+    isPlayingCam,
+    lockedDesign,
     thetaDeg,
     rMm,
     plungeDown,
@@ -34,6 +37,10 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
     isTableRotatingCW,
     isPlungeVisual,
   } = session;
+
+  const effectiveHoles = useMemo(() => {
+    return lockedDesign && lockedDesign.length > 0 ? lockedDesign : holes;
+  }, [lockedDesign, holes]);
 
   const semiAutoModel: TrayModel = useMemo(() => {
     const allPts: Point[] = [];
@@ -52,7 +59,7 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
         const globalIndex = i * nPoints + k + 1;
         const pointK = numberingMode === 'global' ? globalIndex - 1 : k;
 
-        const matchingHole = holes.find((h) => {
+        const matchingHole = effectiveHoles.find((h) => {
           const rMatch = Math.abs(h.r - ri) < 2.0;
           const aDiff = Math.abs(norm360(h.a) - a);
           const aMatch = Math.min(aDiff, 360 - aDiff) < 0.75;
@@ -164,7 +171,7 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
       }
     });
 
-    holes.forEach((h, hIdx) => {
+    effectiveHoles.forEach((h, hIdx) => {
       const isAccounted = allPts.some(
         (p) =>
           p.fired &&
@@ -249,7 +256,7 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
       badCount: 0,
       warns: [],
       totalPts: layersCount * nPoints,
-      totalDrilled: holes.length,
+      totalDrilled: effectiveHoles.length,
       totalSteps: 1,
       hasErr: false,
       hasWarn: false,
@@ -259,7 +266,7 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
     ringRadii,
     nPoints,
     stepAngleDeg,
-    holes,
+    effectiveHoles,
     R,
     toolRadius,
     r1,
@@ -271,8 +278,9 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
   ]);
 
   const semiAutoState: SimulationState = useMemo(() => {
-    const effectiveTheta = camPlaybackStep !== null ? displayTheta : thetaDeg;
-    const effectiveR = camPlaybackStep !== null ? displayR : rMm;
+    const isPlaybackActive = mapPlaybackStep !== null || camPlaybackStep !== null || isPlayingCam;
+    const effectiveTheta = isPlaybackActive ? displayTheta : thetaDeg;
+    const effectiveR = isPlaybackActive ? displayR : rMm;
     const isPlungingOrStepActive = plungeDown || isPlungeVisual;
 
     return {
@@ -296,7 +304,9 @@ export function useSemiAutoModel(session: UseSemiAutoSessionReturn): UseSemiAuto
       isRotatingCW: isTableRotatingCW,
     };
   }, [
+    mapPlaybackStep,
     camPlaybackStep,
+    isPlayingCam,
     displayTheta,
     displayR,
     isTableRotatingCW,
