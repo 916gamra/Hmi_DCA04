@@ -64,6 +64,8 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
     previewScope,
     isMacroDrilling,
     camPlaybackStep,
+    mapPlaybackStep,
+    setMapPlaybackStep,
     camSpeed,
     buttonMap,
     setCamPlaybackStep,
@@ -228,7 +230,9 @@ export const SemiAutomaticPage: React.FC<SemiAutomaticPageProps> = ({
       onStepNext={handleStepNext}
       onTogglePlayCam={handleTogglePlayCam}
       camPlaybackStep={camPlaybackStep}
+      mapPlaybackStep={mapPlaybackStep}
       onSetCamPlaybackStep={setCamPlaybackStep}
+      onSetMapPlaybackStep={setMapPlaybackStep}
       camSpeed={camSpeed}
       onSetCamSpeed={setCamSpeed}
       buttonMap={buttonMap}

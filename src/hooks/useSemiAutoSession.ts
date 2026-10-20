@@ -456,13 +456,11 @@ export function useSemiAutoSession(
       const pulses = Math.max(1, stepObj.pulses);
       const pulseDuration = 85 / effectiveSpeed;
       const startTheta = displayThetaRef.current;
+      const expectedEndTheta = norm360(startTheta + pulses * cwSign * stepAngleDeg);
 
       for (let p = 1; p <= pulses; p++) {
         schedule(() => {
-          const nextTheta =
-            p === pulses
-              ? stepObj.thetaDeg
-              : norm360(startTheta + p * cwSign * stepAngleDeg);
+          const nextTheta = norm360(startTheta + p * cwSign * stepAngleDeg);
           displayThetaRef.current = nextTheta;
           setDisplayTheta(nextTheta);
 
@@ -476,8 +474,8 @@ export function useSemiAutoSession(
       schedule(() => {
         setIsTableRotatingCW(false);
         setIsAnimating(false);
-        displayThetaRef.current = stepObj.thetaDeg;
-        setDisplayTheta(stepObj.thetaDeg);
+        displayThetaRef.current = expectedEndTheta;
+        setDisplayTheta(expectedEndTheta);
 
         if (curIndex >= buttonMap.steps.length) {
           setIsPlayingCam(false);
@@ -941,19 +939,56 @@ export function useSemiAutoSession(
     [buttonMap.steps, executionPlan.steps, thetaDeg, rMm]
   );
 
+  const handleSetMapPlaybackStep = useCallback(
+    (stepArg: number | null | ((prev: number | null) => number | null)) => {
+      setMapPlaybackStep((prevMap) => {
+        const step = typeof stepArg === 'function' ? stepArg(prevMap) : stepArg;
+        if (step === null) {
+          setCamPlaybackStep(null);
+          setDisplayTheta(thetaDeg);
+          displayThetaRef.current = thetaDeg;
+          setDisplayR(rMm);
+          displayRRef.current = rMm;
+        } else {
+          const stepObj = buttonMap.steps[step - 1];
+          if (stepObj) {
+            setDisplayTheta(stepObj.thetaDeg);
+            displayThetaRef.current = stepObj.thetaDeg;
+            setDisplayR(stepObj.rMm);
+            displayRRef.current = stepObj.rMm;
+            if (stepObj.action === 'PUSH' && stepObj.plungeIndex != null) {
+              setCamPlaybackStep(stepObj.plungeIndex);
+            } else {
+              let lastPlunge: number | null = null;
+              for (let i = step - 1; i >= 0; i--) {
+                if (buttonMap.steps[i].action === 'PUSH' && buttonMap.steps[i].plungeIndex != null) {
+                  lastPlunge = buttonMap.steps[i].plungeIndex!;
+                  break;
+                }
+              }
+              setCamPlaybackStep(lastPlunge);
+            }
+          }
+        }
+        return step;
+      });
+    },
+    [buttonMap.steps, thetaDeg, rMm]
+  );
+
   const handleStepPrev = useCallback(() => {
-    const total = executionPlan.totalPlunges;
+    const total = buttonMap.steps.length;
     if (total === 0) return;
-    const prevStep = Math.max(1, (camPlaybackStep ?? 2) - 1);
-    handleSetCamPlaybackStep(prevStep);
-  }, [executionPlan.totalPlunges, camPlaybackStep, handleSetCamPlaybackStep]);
+    const prevStep = Math.max(1, (mapPlaybackStep ?? 2) - 1);
+    handleSetMapPlaybackStep(prevStep);
+  }, [buttonMap.steps.length, mapPlaybackStep, handleSetMapPlaybackStep]);
 
   const handleStepNext = useCallback(() => {
-    const total = executionPlan.totalPlunges;
+    const total = buttonMap.steps.length;
     if (total === 0) return;
-    const nextStep = Math.min(total, (camPlaybackStep ?? 0) + 1);
-    handleSetCamPlaybackStep(nextStep);
-  }, [executionPlan.totalPlunges, camPlaybackStep, handleSetCamPlaybackStep]);
+    const nextStep = Math.min(total, (mapPlaybackStep ?? 0) + 1);
+    handleSetMapPlaybackStep(nextStep);
+  }, [buttonMap.steps.length, mapPlaybackStep, handleSetMapPlaybackStep]);
 
   const handleTogglePlayCam = useCallback(() => {
     if (!buttonMap.steps || buttonMap.steps.length === 0) {
@@ -968,20 +1003,15 @@ export function useSemiAutoSession(
       if (willPlay) {
         setMapPlaybackStep((curMap) => {
           if (curMap === null || curMap >= buttonMap.steps.length) {
+            setCamPlaybackStep(null);
             return 1;
           }
           return curMap;
         });
-        setCamPlaybackStep((curCam) => {
-          if (curCam === null || (executionPlan.totalPlunges > 0 && curCam >= executionPlan.totalPlunges)) {
-            return 1;
-          }
-          return curCam;
-        });
       }
       return willPlay;
     });
-  }, [buttonMap.steps, executionPlan.totalPlunges, onShowToast, isAr]);
+  }, [buttonMap.steps, onShowToast, isAr]);
 
   const handleExitCamPreview = useCallback(() => {
     setMapPlaybackStep(null);
@@ -1175,7 +1205,7 @@ export function useSemiAutoSession(
     setCamPlaybackStep: handleSetCamPlaybackStep,
     camSpeed,
     mapPlaybackStep,
-    setMapPlaybackStep,
+    setMapPlaybackStep: handleSetMapPlaybackStep,
     isPlayingCam,
     isMobileDrawerOpen,
     isClearConfirmOpen,

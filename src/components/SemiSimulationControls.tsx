@@ -12,11 +12,14 @@ import {
   History,
 } from 'lucide-react';
 import { ExecutionPlan } from '../core/plan';
+import { ButtonMapResult } from '../core/buttonMap';
 import { Translations, Language } from '../core/i18n';
 
 interface SemiSimulationControlsProps {
   executionPlan: ExecutionPlan;
-  camPlaybackStep: number | null;
+  camPlaybackStep?: number | null;
+  mapPlaybackStep: number | null;
+  buttonMap: ButtonMapResult;
   isPlayingCam: boolean;
   planSource: 'preview' | 'replay';
   previewScope: 'all' | 'currentLayer';
@@ -26,11 +29,12 @@ interface SemiSimulationControlsProps {
   currentLayer: number;
   onSetPlanSource: (source: 'preview' | 'replay') => void;
   onSetPreviewScope: (scope: 'all' | 'currentLayer') => void;
-  onSetCamPlaybackStep: (step: number | null) => void;
+  onSetCamPlaybackStep?: (step: number | null) => void;
+  onSetMapPlaybackStep: (step: number | null) => void;
   onStepPrev: () => void;
   onStepNext: () => void;
   onTogglePlayCam: () => void;
-  onSyncMachineToStep: (stepIdx: number) => void;
+  onSyncMachineToStep: (stepIdx?: number) => void;
   onExitPreview: () => void;
   isAr: boolean;
   t: Translations;
@@ -40,6 +44,8 @@ interface SemiSimulationControlsProps {
 export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
   executionPlan,
   camPlaybackStep,
+  mapPlaybackStep,
+  buttonMap,
   isPlayingCam,
   planSource,
   previewScope,
@@ -50,6 +56,7 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
   onSetPlanSource,
   onSetPreviewScope,
   onSetCamPlaybackStep,
+  onSetMapPlaybackStep,
   onStepPrev,
   onStepNext,
   onTogglePlayCam,
@@ -58,14 +65,18 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
   isAr,
   t,
 }) => {
-  const totalPlunges = Math.max(1, executionPlan.totalPlunges);
-  const currentStep = camPlaybackStep ?? 1;
-  const progressPercent = (currentStep / totalPlunges) * 100;
+  const totalSteps = buttonMap?.steps ? buttonMap.steps.length : 0;
+  const currentStep = mapPlaybackStep ?? (totalSteps > 0 ? 1 : 0);
+  const progressPercent = totalSteps > 0 ? (currentStep / totalSteps) * 100 : 0;
 
   const activeStep =
-    camPlaybackStep !== null && executionPlan.steps[camPlaybackStep - 1]
-      ? executionPlan.steps[camPlaybackStep - 1]
+    mapPlaybackStep !== null && buttonMap?.steps && buttonMap.steps[mapPlaybackStep - 1]
+      ? buttonMap.steps[mapPlaybackStep - 1]
+      : buttonMap?.steps && buttonMap.steps.length > 0
+      ? buttonMap.steps[0]
       : null;
+
+  const currentActionLabel = activeStep?.buttonLabel ?? '—';
 
   return (
     <div
@@ -79,7 +90,7 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
           <button
             type="button"
             onClick={onTogglePlayCam}
-            disabled={executionPlan.steps.length === 0}
+            disabled={totalSteps === 0}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold text-white transition-all cursor-pointer select-none active:scale-95 shadow-xs disabled:opacity-40 ${
               isPlayingCam
                 ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
@@ -121,7 +132,7 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
           <button
             type="button"
             onClick={onStepPrev}
-            disabled={currentStep <= 1 || executionPlan.steps.length === 0}
+            disabled={currentStep <= 1 || totalSteps === 0}
             className="flex items-center gap-1 px-2.5 py-2 rounded-2xl text-xs font-semibold text-[#475569] bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1]/60 transition-all cursor-pointer select-none active:scale-95 disabled:opacity-40"
             title={t.btnPrevStep || t.camPrevStepBtn}
           >
@@ -133,7 +144,7 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
           <button
             type="button"
             onClick={onStepNext}
-            disabled={currentStep >= totalPlunges || executionPlan.steps.length === 0}
+            disabled={currentStep >= totalSteps || totalSteps === 0}
             className="flex items-center gap-1 px-2.5 py-2 rounded-2xl text-xs font-semibold text-[#475569] bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1]/60 transition-all cursor-pointer select-none active:scale-95 disabled:opacity-40"
             title={t.btnNextStep || t.camNextStepBtn}
           >
@@ -156,10 +167,10 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
           <div className="h-4.5 w-px bg-[#cbd5e1]/70 mx-0.5" />
 
           {/* Sync Machine to Step Button */}
-          {camPlaybackStep !== null && (
+          {mapPlaybackStep !== null && (
             <button
               type="button"
-              onClick={() => onSyncMachineToStep(camPlaybackStep)}
+              onClick={() => onSyncMachineToStep(mapPlaybackStep)}
               className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 transition-all"
               title={t.camJumpMachineBtn}
             >
@@ -237,10 +248,13 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
             </div>
           )}
 
-          {/* Step Badge Counter */}
-          <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1 rounded-xl border border-blue-200">
+          {/* Step Badge Counter & Command */}
+          <div className="flex items-center gap-1.5 bg-blue-50/90 px-2.5 py-1 rounded-xl border border-blue-200">
             <span className="text-xs font-bold text-blue-700 font-mono">
-              Step {currentStep} / {totalPlunges}
+              Step {currentStep} / {totalSteps}
+            </span>
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-blue-600 text-white shadow-2xs">
+              {currentActionLabel}
             </span>
           </div>
         </div>
@@ -252,19 +266,20 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
           <input
             type="range"
             min={1}
-            max={totalPlunges}
+            max={Math.max(1, totalSteps)}
             value={currentStep}
+            disabled={totalSteps === 0}
             onChange={(e) => {
               const nextStep = Number(e.target.value);
-              onSetCamPlaybackStep(nextStep);
+              onSetMapPlaybackStep(nextStep);
             }}
-            className="w-full h-2 bg-[#e2e8f0] rounded-lg appearance-none cursor-pointer accent-[#2563eb]"
+            className="w-full h-2 bg-[#e2e8f0] rounded-lg appearance-none cursor-pointer accent-[#2563eb] disabled:opacity-40"
           />
         </div>
         <div className="flex justify-between items-center text-[11px] font-mono font-semibold text-[#64748b] px-0.5">
           <span>1</span>
           <span className="text-xs font-bold text-[#2563eb]">{progressPercent.toFixed(0)}%</span>
-          <span>{totalPlunges}</span>
+          <span>{totalSteps}</span>
         </div>
       </div>
 
@@ -289,6 +304,10 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
 
         <div className="flex items-center gap-3 text-[#64748b] text-[11px] font-mono">
           <div>
+            <span>Action: </span>
+            <strong className="text-blue-700 font-bold">{currentActionLabel}</strong>
+          </div>
+          <div>
             <span>R: </span>
             <strong className="text-[#0f172a]">{activeStep ? `${activeStep.rMm}mm` : '—'}</strong>
           </div>
@@ -297,9 +316,9 @@ export const SemiSimulationControls: React.FC<SemiSimulationControlsProps> = ({
             <strong className="text-[#0f172a]">{activeStep ? `${activeStep.thetaDeg}°` : '—'}</strong>
           </div>
           <div>
-            <span>Band: </span>
+            <span>Layer: </span>
             <strong className="text-[#2563eb]">
-              {activeStep ? activeStep.matchingLayerName : '—'}
+              {activeStep ? activeStep.layerName : '—'}
             </strong>
           </div>
           <div>

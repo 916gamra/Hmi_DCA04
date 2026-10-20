@@ -19,7 +19,7 @@ interface SemiWorkspaceProps {
   t: Translations;
   lang: Language;
   isAr: boolean;
-  buttonMap?: ButtonMapResult;
+  buttonMap: ButtonMapResult;
   onShowToast?: (msg: string) => void;
   thetaDeg: number;
   rMm: number;
@@ -37,6 +37,7 @@ interface SemiWorkspaceProps {
   activePlaybackStep: any | null;
   isPlayingCam: boolean;
   camPlaybackStep: number | null;
+  mapPlaybackStep: number | null;
   planSource: 'preview' | 'replay';
   previewScope: 'all' | 'currentLayer';
   isMobileDrawerOpen: boolean;
@@ -66,6 +67,7 @@ interface SemiWorkspaceProps {
   onStepNext: () => void;
   onTogglePlayCam: () => void;
   onSetCamPlaybackStep: (step: number | null) => void;
+  onSetMapPlaybackStep: (step: number | null) => void;
   camSpeed: number;
   onSetCamSpeed: (speed: number) => void;
   lockedDesign: SemiHole[] | null;
@@ -98,6 +100,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   executionPlan,
   isPlayingCam,
   camPlaybackStep,
+  mapPlaybackStep,
   camSpeed,
   onSetCamSpeed,
   planSource,
@@ -129,6 +132,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
   onStepNext,
   onTogglePlayCam,
   onSetCamPlaybackStep,
+  onSetMapPlaybackStep,
   lockedDesign,
   onLockDesign,
   onUnlockDesign,
@@ -193,6 +197,8 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
         <SemiSimulationControls
           executionPlan={executionPlan}
           camPlaybackStep={camPlaybackStep}
+          mapPlaybackStep={mapPlaybackStep}
+          buttonMap={buttonMap}
           isPlayingCam={isPlayingCam}
           planSource={planSource}
           previewScope={previewScope}
@@ -201,6 +207,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
           onSetPlanSource={onSetPlanSource}
           onSetPreviewScope={onSetPreviewScope}
           onSetCamPlaybackStep={onSetCamPlaybackStep}
+          onSetMapPlaybackStep={onSetMapPlaybackStep}
           onStepPrev={onStepPrev}
           onStepNext={onStepNext}
           onTogglePlayCam={onTogglePlayCam}
@@ -282,6 +289,8 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
           <SemiSimulationControls
             executionPlan={executionPlan}
             camPlaybackStep={camPlaybackStep}
+            mapPlaybackStep={mapPlaybackStep}
+            buttonMap={buttonMap}
             isPlayingCam={isPlayingCam}
             planSource={planSource}
             previewScope={previewScope}
@@ -290,6 +299,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
             onSetPlanSource={onSetPlanSource}
             onSetPreviewScope={onSetPreviewScope}
             onSetCamPlaybackStep={onSetCamPlaybackStep}
+            onSetMapPlaybackStep={onSetMapPlaybackStep}
             onStepPrev={onStepPrev}
             onStepNext={onStepNext}
             onTogglePlayCam={onTogglePlayCam}
