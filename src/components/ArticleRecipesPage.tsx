@@ -58,7 +58,7 @@ export const ArticleRecipesPage: React.FC<ArticleRecipesPageProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 sm:gap-3 max-w-5xl mx-auto w-full h-full min-h-0 select-none overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col gap-2 sm:gap-3 max-w-7xl mx-auto w-full h-full min-h-0 select-none overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <ConfirmModal
         isOpen={!!presetToDelete}
         onClose={() => setPresetToDelete(null)}

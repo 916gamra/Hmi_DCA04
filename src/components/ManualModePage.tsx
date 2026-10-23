@@ -57,7 +57,7 @@ export const ManualModePage: React.FC<ManualModePageProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2.5 sm:gap-4 max-w-4xl mx-auto w-full h-full min-h-0 select-none overflow-hidden" dir="ltr">
+    <div className="flex flex-col gap-2.5 sm:gap-4 max-w-7xl mx-auto w-full h-full min-h-0 select-none overflow-hidden" dir="ltr">
       {/* Title Header Card (Fixed at Top) */}
       <div className="flex-none oneui-card p-3 sm:p-4 bg-gradient-to-r from-white to-[#f8fafc] border border-[#e2e8f0]/90 shadow-2xs">
         <div className="flex items-center gap-2.5 sm:gap-3">

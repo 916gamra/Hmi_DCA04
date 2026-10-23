@@ -152,6 +152,8 @@ export interface RecipePreset {
   descriptionFr?: string;
   tag: string;
   tagFr?: string;
+  kind?: 'auto' | 'semi';
+  formula?: string;
   params: Partial<TrayParams>;
 }
 

@@ -165,7 +165,7 @@ export const SemiWorkspace: React.FC<SemiWorkspaceProps> = ({
 
   return (
     <div
-      className="flex flex-col gap-3 max-w-5xl mx-auto w-full h-full min-h-0 select-none overflow-hidden"
+      className="flex flex-col gap-3 max-w-7xl mx-auto w-full h-full min-h-0 select-none overflow-hidden"
       dir={isAr ? 'rtl' : 'ltr'}
     >
       <ConfirmModal

@@ -254,20 +254,7 @@ export function useSemiAutoSession(
     return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v < 7 ? Math.round(v) : 0;
   });
 
-  const [holes, setHoles] = useState<SemiHole[]>(() => {
-    const arr = savedState.holes;
-    if (Array.isArray(arr)) {
-      return arr.filter(
-        (h): h is SemiHole =>
-          Boolean(h) &&
-          typeof h.r === 'number' &&
-          Number.isFinite(h.r) &&
-          typeof h.a === 'number' &&
-          Number.isFinite(h.a)
-      );
-    }
-    return [];
-  });
+  const [holes, setHoles] = useState<SemiHole[]>([]);
 
   const [numberingMode, setNumberingMode] = useState<'cam' | 'layer' | 'global'>(() => {
     const v = savedState.numberingMode;
@@ -276,17 +263,10 @@ export function useSemiAutoSession(
     return 'cam';
   });
 
-  const [lockedDesign, setLockedDesign] = useState<SemiHole[] | null>(() => {
-    return Array.isArray(savedState.savedDesign) ? savedState.savedDesign : null;
-  });
+  const [lockedDesign, setLockedDesign] = useState<SemiHole[] | null>(null);
 
   // S1: Plan source & preview scope state
-  const [planSource, setPlanSource] = useState<'preview' | 'replay'>(() => {
-    if (savedState.planSource === 'replay' || savedState.planSource === 'preview') {
-      return savedState.planSource;
-    }
-    return savedState.holes && savedState.holes.length > 0 ? 'replay' : 'preview';
-  });
+  const [planSource, setPlanSource] = useState<'preview' | 'replay'>('preview');
 
   const [previewScope, setPreviewScope] = useState<'all' | 'currentLayer'>(() => {
     return savedState.previewScope === 'currentLayer' ? 'currentLayer' : 'all';
@@ -393,7 +373,7 @@ export function useSemiAutoSession(
     };
 
     const effectiveSpeed = Math.max(0.1, camSpeed);
-    const cwSign = -1; // Unidirectional Clockwise direction (matches table CW stepping)
+    const cwSign = 1; // Unidirectional Clockwise direction (matches table CW stepping)
 
     // Mode 1: Manual scrub / step / pause — position directly at this button step
     if (!isPlayingCam) {

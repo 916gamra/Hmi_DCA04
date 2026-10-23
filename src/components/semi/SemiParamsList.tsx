@@ -4,7 +4,7 @@ import { ExecutionPlan } from '../../core/plan';
 import { SemiGeometryCard } from './SemiGeometryCard';
 import { SemiPointsCard } from './SemiPointsCard';
 import { SemiTimingCard } from './SemiTimingCard';
-import { SemiModesCard } from './SemiModesCard';
+
 import { SemiSafetyCard } from './SemiSafetyCard';
 import { SemiPlanCard } from './SemiPlanCard';
 import { SemiButtonMapCard } from './SemiButtonMapCard';
@@ -197,16 +197,7 @@ export const SemiParamsList: React.FC<SemiParamsListProps> = ({
         onSetExpHz={onSetExpHz}
       />
 
-      {/* 4. Modes machine */}
-      <SemiModesCard
-        isOpen={openSection === 'modes'}
-        onToggle={() => onToggleSection('modes')}
-        t={t}
-        tableZUp={tableZUp}
-        spindleOn={spindleOn}
-        onToggleTableZ={onToggleTableZ}
-        onToggleSpindle={onToggleSpindle}
-      />
+
 
       {/* 5. Sécurité mécanique & Rayon minimal des têtes */}
       <SemiSafetyCard
